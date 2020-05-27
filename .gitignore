@@ -1,0 +1,5 @@
+# Default ignored files
+/shelf/
+/.idea/*
+Sudoku.iml
+/target/classes/META-INF/Sudoku.kotlin_module
