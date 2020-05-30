@@ -184,7 +184,7 @@ public class GameState {
         this.running = false;
         this.actionListeners.forEach(actionListener -> actionListener.actionPerformed(new ActionEvent(this, 0, "done")));
 
-        setSelectedCell(this.cells.get(0));
+        setSelectedCells(emptyList());
         setCalculationCells(emptyList());
         updateNoWait();
     }
