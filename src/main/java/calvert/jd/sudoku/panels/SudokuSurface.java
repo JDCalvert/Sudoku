@@ -1,5 +1,6 @@
 package calvert.jd.sudoku.panels;
 
+import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
 
 import javax.swing.*;
@@ -8,7 +9,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 import static calvert.jd.sudoku.panels.PuzzleSurface.CELL_SIZE;
 import static java.awt.BorderLayout.CENTER;
@@ -43,6 +50,8 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         add(this.puzzleSurface, CENTER);
 
         this.controlPanel = new JPanel();
+        this.controlPanel.setPreferredSize(new Dimension(240, 100));
+
         BoxLayout controlPanelLayout = new BoxLayout(this.controlPanel, Y_AXIS);
         this.controlPanel.setLayout(controlPanelLayout);
         add(this.controlPanel, BorderLayout.EAST);
@@ -88,8 +97,8 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         }
 
         JPanel buttonPanel = new JPanel();
-        FlowLayout buttonPanelLayout = new FlowLayout();
-        buttonPanelLayout.setHgap(0);
+        GridLayout buttonPanelLayout = new GridLayout();
+        buttonPanelLayout.setRows(2);
         buttonPanel.setLayout(buttonPanelLayout);
         this.controlPanel.add(buttonPanel);
 
@@ -112,6 +121,16 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         clearAllButton.setActionCommand("clearAll");
         clearAllButton.addActionListener(this);
         buttonPanel.add(clearAllButton);
+
+        JButton saveSetupButton = new JButton("Save");
+        saveSetupButton.setActionCommand("save");
+        saveSetupButton.addActionListener(this);
+        buttonPanel.add(saveSetupButton);
+
+        JButton loadSetupButton = new JButton("Load");
+        loadSetupButton.setActionCommand("load");
+        loadSetupButton.addActionListener(this);
+        buttonPanel.add(loadSetupButton);
 
         makeNotFocusable(this.controlPanel);
     }
@@ -149,16 +168,41 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         } else if (actionCommand.equals("right")) {
             this.gameState.moveSelectedCellRight();
         } else if (actionCommand.equals("clear")) {
-            this.gameState.getSelectedCells().forEach(cell -> cell.setValue(null));
+            this.gameState.getSelectedCells().forEach(cell -> cell.setInitialValue(null));
         } else if (actionCommand.equals("clearAll")) {
             this.gameState.clear();
+        } else if (actionCommand.equals("save")) {
+            File file = new File("save.txt");
+            try {
+                FileWriter fileWriter = new FileWriter(file);
+                for (Cell cell : this.gameState.getCells()) {
+                    fileWriter.write(Optional.ofNullable(cell.getInitialValue()).map(String::valueOf).orElse("0"));
+                }
+                fileWriter.flush();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        } else if (actionCommand.equals("load")) {
+            File file = new File("save.txt");
+            try {
+                FileReader fileReader = new FileReader(file);
+                List<Cell> cellsList = this.gameState.getCells();
+                for (Cell cell : cellsList) {
+                    int value = Integer.parseInt(String.valueOf((char) fileReader.read()));
+                    if (value > 0) {
+                        cell.setInitialValue(value);
+                    }
+                }
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
 
         char[] chars = actionCommand.toCharArray();
         if (chars.length > 0) {
             char aChar = chars[0];
             if (aChar >= '1' && aChar <= '9') {
-                this.gameState.getSelectedCells().forEach(cell -> cell.setValue(Integer.valueOf(String.valueOf(aChar))));
+                this.gameState.getSelectedCells().forEach(cell -> cell.setInitialValue(Integer.valueOf(String.valueOf(aChar))));
             }
         }
 
@@ -180,9 +224,9 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
             this.gameState.moveSelectedCellRight();
         } else if (e.getKeyChar() >= '1' && e.getKeyChar() <= '9') {
-            this.gameState.getSelectedCells().forEach(cell -> cell.setValue(Integer.valueOf(String.valueOf(e.getKeyChar()))));
+            this.gameState.getSelectedCells().forEach(cell -> cell.setInitialValue(Integer.valueOf(String.valueOf(e.getKeyChar()))));
         } else if (e.getKeyCode() == KeyEvent.VK_DELETE) {
-            this.gameState.getSelectedCells().forEach(cell -> cell.setValue(null));
+            this.gameState.getSelectedCells().forEach(cell -> cell.setInitialValue(null));
         }
         repaint();
     }
