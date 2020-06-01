@@ -34,6 +34,7 @@ public abstract class LogicStage {
      */
     public enum LogicStageIdentifier {
         SINGLE_CELL_ELIMINATION(new SingleCellElimination()),
+        CENTRE_REGION_MAGIC_SQUARE(new CentreRegionMagicSquare()),
         SHARED_POSSIBILITIES_ELIMINATION(new SharedPossibilitiesElimination()),
         ONLY_CELL_WITH_POSSIBILITY(new OnlyCellWithPossibility()),
         MULTIPLE_CELL_ELIMINATION(new MultipleCellElimination());

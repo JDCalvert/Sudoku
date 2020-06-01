@@ -1,22 +1,19 @@
 package calvert.jd.sudoku.game;
 
+import calvert.jd.sudoku.game.logic.LogicStage;
 import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
 import calvert.jd.sudoku.game.rules.Rule;
-import calvert.jd.sudoku.game.rules.SudokuColumnRule;
-import calvert.jd.sudoku.game.rules.SudokuRegionRule;
-import calvert.jd.sudoku.game.rules.SudokuRowRule;
+import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
 import calvert.jd.sudoku.game.util.LogicQueue;
 import calvert.jd.sudoku.game.util.LogicQueue.LogicQueueEntry;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
@@ -28,15 +25,13 @@ public class GameState {
     private List<Cell> errorCells = emptyList();
 
     private boolean running = false;
+    private boolean shouldPause = false;
     private boolean shouldStop = false;
-    private boolean shouldReset = false;
-
-    private final AtomicBoolean hasUpdated = new AtomicBoolean();
 
     private final Queue<LogicQueueEntry> processQueue = new LogicQueue();
 
     private List<Rule> rules = new ArrayList<>();
-    private List<LogicStageIdentifier> logicStages = new ArrayList<>();
+    private List<LogicStage> logicStages = new ArrayList<>();
 
     private List<Cell> selectedCells;
     private List<Cell> calculationCells = emptyList();
@@ -58,61 +53,72 @@ public class GameState {
         this.processQueue.add(new LogicQueueEntry(cell, logicStageIdentifier));
     }
 
-    public void start() {
-        new Thread(this::solve).start();
+    public void start(GameParameters gameParameters) {
+        this.rules = gameParameters.getRules().stream()
+            .sorted()
+            .map(RuleIdentifier::getRule)
+            .collect(Collectors.toList());
+
+        this.logicStages = gameParameters.getLogicStages().stream()
+            .sorted()
+            .map(LogicStageIdentifier::getLogicStage)
+            .collect(Collectors.toList());
+
+        new Thread(this::start).start();
     }
 
-    private void solve() {
+    public void togglePause() {
+        if (this.running) {
+            this.shouldPause = true;
+        } else {
+            this.running = true;
+            this.shouldPause = false;
+            new Thread(this::processCells).start();
+        }
+    }
+
+    private void start() {
         this.running = true;
+        this.shouldPause = false;
         this.shouldStop = false;
-        this.shouldReset = false;
 
-        this.rules = asList(
-            new SudokuRowRule(),
-            new SudokuColumnRule(),
-            new SudokuRegionRule()
-        );
-
-        this.logicStages = asList(LogicStageIdentifier.values());
+        this.processQueue.clear();
 
         setErrorCells(emptyList());
 
         // Build initial list of cells to process, and reset possible values for blank cells.
         for (Cell cell : this.cells) {
             setSelectedCell(cell);
-            update();
+            //update();
             if (nonNull(cell.getInitialValue())) {
                 cell.setValue(cell.getInitialValue());
             } else {
                 cell.resetPossibleValues();
-                update();
+                //update();
             }
             if (checkStatus()) {
                 return;
             }
         }
 
-        setSelectedCells(emptyList());
         update();
+        processCells();
+    }
 
-        this.hasUpdated.set(true);
-        while (this.hasUpdated.get()) {
-            resetHasUpdated();
+    private void processCells() {
+        while (!this.processQueue.isEmpty()) {
+            LogicQueueEntry logicQueueEntry = this.processQueue.poll();
 
-            while (!this.processQueue.isEmpty()) {
-                LogicQueueEntry logicQueueEntry = this.processQueue.poll();
-
-                logicQueueEntry.getLogicStageIdentifier()
-                    .getLogicStage()
-                    .runLogic(this, logicQueueEntry.getCell());
-
-                if (checkStatus()) {
-                    return;
-                }
-            }
+            logicQueueEntry.getLogicStageIdentifier()
+                .getLogicStage()
+                .runLogic(this, logicQueueEntry.getCell());
 
             setSelectedCells(emptyList());
             setCalculationCells(emptyList());
+
+            if (checkStatus()) {
+                return;
+            }
         }
 
         done();
@@ -122,9 +128,8 @@ public class GameState {
         if (this.shouldStop || isError() || isComplete()) {
             done();
             return true;
-        } else if (this.shouldReset) {
-            reinitialise();
-            done();
+        } else if (this.shouldPause) {
+            this.running = false;
             return true;
         }
         return false;
@@ -139,6 +144,7 @@ public class GameState {
             this.errorCells = this.cells.stream()
                 .filter(cell ->
                     this.rules.stream()
+                        .filter(rule -> rule.appliesToCell(cell))
                         .map(rule -> rule.getVisibleCells(this, cell))
                         .flatMap(Collection::stream)
                         .filter(visibleCell -> visibleCell != cell)
@@ -155,12 +161,12 @@ public class GameState {
     }
 
     public void update() {
+        updateNoWait();
         try {
             Thread.sleep(100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        updateNoWait();
     }
 
     private void updateNoWait() {
@@ -168,15 +174,15 @@ public class GameState {
     }
 
     public void reset() {
-        this.shouldReset = true;
-        if (!this.running) {
-            reinitialise();
-        }
+        reinitialise();
     }
 
     private void reinitialise() {
         this.cells.forEach(Cell::resetValue);
         this.errorCells = emptyList();
+
+        this.processQueue.clear();
+
         updateNoWait();
     }
 
@@ -190,18 +196,7 @@ public class GameState {
     }
 
     public void handleCellUpdated(Cell cell) {
-        setHasUpdated();
-        this.logicStages.stream()
-            .map(LogicStageIdentifier::getLogicStage)
-            .forEach(logicStage -> logicStage.processCellUpdate(this, cell));
-    }
-
-    private void resetHasUpdated() {
-        this.hasUpdated.set(false);
-    }
-
-    public void setHasUpdated() {
-        this.hasUpdated.set(true);
+        this.logicStages.forEach(logicStage -> logicStage.processCellUpdate(this, cell));
     }
 
     public List<Cell> getCells() {
