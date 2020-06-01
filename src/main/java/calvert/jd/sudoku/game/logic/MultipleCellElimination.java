@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.ONLY_CELL_WITH_POSSIBILITY;
+import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.MULTIPLE_CELL_ELIMINATION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
@@ -28,13 +28,14 @@ public class MultipleCellElimination extends LogicStage {
             return;
         }
 
-        gameState.addToProcessQueue(cell, ONLY_CELL_WITH_POSSIBILITY);
+        gameState.addToProcessQueue(cell, MULTIPLE_CELL_ELIMINATION);
 
         gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
             .map(rule -> rule.getVisibleCells(gameState, cell))
             .flatMap(Collection::stream)
             .distinct()
-            .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, ONLY_CELL_WITH_POSSIBILITY));
+            .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, MULTIPLE_CELL_ELIMINATION));
     }
 
     @Override
@@ -45,6 +46,7 @@ public class MultipleCellElimination extends LogicStage {
     @Override
     public void runLogic(GameState gameState, Cell cell) {
         gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
             .filter(Rule::isInclusive)
             .forEach(inclusiveRule -> {
                 gameState.setSelectedCell(cell);
@@ -118,6 +120,7 @@ public class MultipleCellElimination extends LogicStage {
      */
     private List<Cell> getVisibleCellsForAllRules(GameState gameState, Cell cell) {
         return gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
             .map(rule -> rule.getVisibleCells(gameState, cell))
             .flatMap(Collection::stream)
             .distinct()

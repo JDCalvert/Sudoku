@@ -6,7 +6,7 @@ import calvert.jd.sudoku.game.GameState;
 import java.util.List;
 
 import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.SINGLE_CELL_ELIMINATION;
-import static java.util.Objects.isNull;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 
 /**
@@ -29,25 +29,29 @@ public class SingleCellElimination extends LogicStage {
     @Override
     public void runLogic(GameState gameState, Cell cell) {
         // If somehow this cell doesn't have a value, then we can skip this logic.
-        if (isNull(cell.getValue())) {
+        if (!isValidForCell(cell)) {
             return;
         }
 
         gameState.setSelectedCell(cell);
         gameState.update();
 
-        gameState.getRules().forEach(rule -> {
-            List<Cell> visibleCells = rule.getVisibleCells(gameState, cell);
-            gameState.setCalculationCells(visibleCells);
-            gameState.update();
-
-            boolean updatedCells = visibleCells.stream()
-                .map(visibleCell -> visibleCell.removePossibleValues(rule.getPossibilitiesToEliminate(cell)))
-                .reduce(false, (a, b) -> a || b);
-
-            if (updatedCells) {
+        gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
+            .forEach(rule -> {
+                List<Cell> visibleCells = rule.getVisibleCells(gameState, cell);
+                gameState.setCalculationCells(visibleCells);
                 gameState.update();
-            }
-        });
+
+                boolean updatedCells = visibleCells.stream()
+                    .map(visibleCell -> visibleCell.removePossibleValues(rule.getPossibilitiesToEliminate(cell.getValue())))
+                    .reduce(false, (a, b) -> a || b);
+
+                if (updatedCells) {
+                    gameState.update();
+                }
+            });
+
+        gameState.setCalculationCells(emptyList());
     }
 }

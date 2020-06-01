@@ -6,28 +6,25 @@ import calvert.jd.sudoku.game.GameState;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.abs;
-
-public class KnightsMoveRule extends Rule {
+public class LeadingDiagonalDownRule extends Rule {
 
     @Override
     public List<Cell> getVisibleCells(GameState gameState, Cell cell) {
-        return gameState.getCells().stream()
-            .filter(someCell -> {
-                int iDiff = abs(cell.getI() - someCell.getI());
-                int jDiff = abs(cell.getJ() - someCell.getJ());
-                return iDiff * jDiff == 2;
-            })
+        List<Cell> visibleCells = gameState.getCells().stream()
+            .filter(visibleCell -> visibleCell.getI() == visibleCell.getJ())
             .collect(Collectors.toList());
+
+        visibleCells.remove(cell);
+        return visibleCells;
     }
 
     @Override
     public boolean isInclusive() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean appliesToCell(Cell cell) {
-        return true;
+        return cell.getI() == cell.getJ();
     }
 }

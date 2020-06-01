@@ -30,6 +30,7 @@ public class SharedPossibilitiesElimination extends LogicStage {
         gameState.addToProcessQueue(cell, SHARED_POSSIBILITIES_ELIMINATION);
 
         gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
             .map(rule -> rule.getVisibleCells(gameState, cell))
             .flatMap(Collection::stream)
             .distinct()
@@ -48,6 +49,7 @@ public class SharedPossibilitiesElimination extends LogicStage {
         }
 
         gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
             .filter(Rule::isInclusive)
             .forEach(inclusiveRule -> {
                 /*gameState.setSelectedCell(cell);
@@ -104,6 +106,7 @@ public class SharedPossibilitiesElimination extends LogicStage {
 
     private List<Cell> getVisibleCellsForAllRules(GameState gameState, Cell cell) {
         return gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
             .map(rule -> rule.getVisibleCells(gameState, cell))
             .flatMap(Collection::stream)
             .distinct()

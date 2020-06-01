@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Math.abs;
 
-public class KnightsMoveRule extends Rule {
+public class KingsMoveRule extends Rule {
 
     @Override
     public List<Cell> getVisibleCells(GameState gameState, Cell cell) {
@@ -16,7 +16,7 @@ public class KnightsMoveRule extends Rule {
             .filter(someCell -> {
                 int iDiff = abs(cell.getI() - someCell.getI());
                 int jDiff = abs(cell.getJ() - someCell.getJ());
-                return iDiff * jDiff == 2;
+                return iDiff == 1 || jDiff == 1;
             })
             .collect(Collectors.toList());
     }

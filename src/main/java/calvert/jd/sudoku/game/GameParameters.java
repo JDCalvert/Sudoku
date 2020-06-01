@@ -1,6 +1,24 @@
 package calvert.jd.sudoku.game;
 
-public class GameParameters {
+import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
+import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
 
-    private final boolean sudokuRulesEnabled = true;
+import java.util.List;
+
+public class GameParameters {
+    private final List<RuleIdentifier> rules;
+    private final List<LogicStageIdentifier> logicStages;
+
+    public GameParameters(List<RuleIdentifier> rules, List<LogicStageIdentifier> logicStages) {
+        this.rules = rules;
+        this.logicStages = logicStages;
+    }
+
+    public List<RuleIdentifier> getRules() {
+        return this.rules;
+    }
+
+    public List<LogicStageIdentifier> getLogicStages() {
+        return this.logicStages;
+    }
 }

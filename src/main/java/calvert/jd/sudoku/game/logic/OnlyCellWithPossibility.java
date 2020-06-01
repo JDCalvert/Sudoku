@@ -25,6 +25,7 @@ public class OnlyCellWithPossibility extends LogicStage {
         gameState.addToProcessQueue(cell, ONLY_CELL_WITH_POSSIBILITY);
 
         gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
             .map(rule -> rule.getVisibleCells(gameState, cell))
             .flatMap(Collection::stream)
             .distinct()
@@ -47,6 +48,7 @@ public class OnlyCellWithPossibility extends LogicStage {
         gameState.update();
 
         List<Rule> rules = gameState.getRules().stream()
+            .filter(rule -> rule.appliesToCell(cell))
             .filter(Rule::isInclusive)
             .collect(Collectors.toList());
 
@@ -63,8 +65,7 @@ public class OnlyCellWithPossibility extends LogicStage {
                 )
                 .collect(Collectors.toList());
 
-            // We should have found one or zero values. If we got more than one, something is wrong. If we got exactly
-            // one value, then
+            // We should have found one or zero values. If we got more than one, something is wrong. If we got exactly one value, then this cell must have that value
             if (values.size() > 1) {
                 gameState.setErrorCell(cell);
                 return;
