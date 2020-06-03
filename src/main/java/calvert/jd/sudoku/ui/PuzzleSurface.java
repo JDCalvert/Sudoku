@@ -1,4 +1,4 @@
-package calvert.jd.sudoku.panels;
+package calvert.jd.sudoku.ui;
 
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;

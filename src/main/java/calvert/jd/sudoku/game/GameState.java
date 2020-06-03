@@ -1,15 +1,17 @@
 package calvert.jd.sudoku.game;
 
+import calvert.jd.sudoku.actioncontrol.GameStateListener;
 import calvert.jd.sudoku.game.logic.LogicStage;
 import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
 import calvert.jd.sudoku.game.rules.Rule;
 import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
+import calvert.jd.sudoku.game.util.CellUpdate;
 import calvert.jd.sudoku.game.util.LogicQueue;
 import calvert.jd.sudoku.game.util.LogicQueue.LogicQueueEntry;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.max;
@@ -28,6 +30,11 @@ public class GameState {
     private boolean shouldPause = false;
     private boolean shouldStop = false;
 
+    private boolean doUpdates = true;
+    private long updateDelay = 100;
+
+    private int numQueueProcesses = 0;
+
     private final Queue<LogicQueueEntry> processQueue = new LogicQueue();
 
     private List<Rule> rules = new ArrayList<>();
@@ -36,7 +43,7 @@ public class GameState {
     private List<Cell> selectedCells;
     private List<Cell> calculationCells = emptyList();
 
-    private final List<ActionListener> actionListeners = new ArrayList<>();
+    private final List<GameStateListener> gameStateListeners = new ArrayList<>();
 
     public GameState() {
         for (int i = 0; i < 9; i++) {
@@ -64,6 +71,8 @@ public class GameState {
             .map(LogicStageIdentifier::getLogicStage)
             .collect(Collectors.toList());
 
+        this.numQueueProcesses = 0;
+
         new Thread(this::start).start();
     }
 
@@ -89,19 +98,17 @@ public class GameState {
         // Build initial list of cells to process, and reset possible values for blank cells.
         for (Cell cell : this.cells) {
             setSelectedCell(cell);
-            //update();
             if (nonNull(cell.getInitialValue())) {
                 cell.setValue(cell.getInitialValue());
             } else {
                 cell.resetPossibleValues();
-                //update();
             }
+
             if (checkStatus()) {
                 return;
             }
         }
 
-        update();
         processCells();
     }
 
@@ -109,15 +116,18 @@ public class GameState {
         while (!this.processQueue.isEmpty()) {
             LogicQueueEntry logicQueueEntry = this.processQueue.poll();
 
-            logicQueueEntry.getLogicStageIdentifier()
-                .getLogicStage()
-                .runLogic(this, logicQueueEntry.getCell());
+            LogicStage logicStage = logicQueueEntry.getLogicStageIdentifier().getLogicStage();
+            Cell cell = logicQueueEntry.getCell();
 
-            setSelectedCells(emptyList());
-            setCalculationCells(emptyList());
+            if (logicStage.isValidForCell(cell)) {
+                logicStage.runLogic(this, cell);
+                setSelectedCells(emptyList());
+                setCalculationCells(emptyList());
+                this.numQueueProcesses++;
 
-            if (checkStatus()) {
-                return;
+                if (checkStatus()) {
+                    return;
+                }
             }
         }
 
@@ -142,14 +152,18 @@ public class GameState {
     public boolean isError() {
         if (this.errorCells.isEmpty()) {
             this.errorCells = this.cells.stream()
+                .filter(cell -> nonNull(cell.getValue()))
                 .filter(cell ->
                     this.rules.stream()
                         .filter(rule -> rule.appliesToCell(cell))
-                        .map(rule -> rule.getVisibleCells(this, cell))
-                        .flatMap(Collection::stream)
-                        .filter(visibleCell -> visibleCell != cell)
-                        .filter(visibleCell -> nonNull(visibleCell.getValue()))
-                        .anyMatch(visibleCell -> Objects.equals(visibleCell.getValue(), cell.getValue()))
+                        .anyMatch(rule -> {
+                                List<Integer> illegalValues = rule.getPossibilitiesToEliminate(cell.getValue());
+                                return rule.getVisibleCells(this, cell).stream()
+                                    .filter(visibleCell -> visibleCell != cell)
+                                    .filter(visibleCell -> nonNull(visibleCell.getValue()))
+                                    .anyMatch(visibleCell -> illegalValues.contains(visibleCell.getValue()));
+                            }
+                        )
                 )
                 .collect(Collectors.toList());
         }
@@ -161,16 +175,18 @@ public class GameState {
     }
 
     public void update() {
-        updateNoWait();
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (this.doUpdates) {
+            updateNoWait();
+            try {
+                Thread.sleep(this.updateDelay);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     private void updateNoWait() {
-        this.actionListeners.forEach(actionListener -> actionListener.actionPerformed(new ActionEvent(this, 0, "update")));
+        this.gameStateListeners.forEach(GameStateListener::update);
     }
 
     public void reset() {
@@ -187,16 +203,18 @@ public class GameState {
     }
 
     public void done() {
-        this.running = false;
-        this.actionListeners.forEach(actionListener -> actionListener.actionPerformed(new ActionEvent(this, 0, "done")));
+        System.out.println("Total queue entries processed: " + this.numQueueProcesses);
 
+        this.running = false;
         setSelectedCells(emptyList());
         setCalculationCells(emptyList());
+
+        this.gameStateListeners.forEach(GameStateListener::done);
         updateNoWait();
     }
 
-    public void handleCellUpdated(Cell cell) {
-        this.logicStages.forEach(logicStage -> logicStage.processCellUpdate(this, cell));
+    public void handleCellUpdate(CellUpdate cellUpdate) {
+        this.logicStages.forEach(logicStage -> logicStage.processCellUpdate(this, cellUpdate));
     }
 
     public List<Cell> getCells() {
@@ -239,6 +257,14 @@ public class GameState {
         return this.rules;
     }
 
+    public void setDoUpdates(boolean doUpdates) {
+        this.doUpdates = doUpdates;
+    }
+
+    public void setUpdateDelay(long updateDelay) {
+        this.updateDelay = updateDelay;
+    }
+
     public void moveSelectedCellUp() {
         moveSelectedCell(0, -1);
     }
@@ -278,7 +304,7 @@ public class GameState {
         });
     }
 
-    public void addActionListener(ActionListener actionListener) {
-        this.actionListeners.add(actionListener);
+    public void addGameStateListener(GameStateListener listener) {
+        this.gameStateListeners.add(listener);
     }
 }

@@ -1,4 +1,4 @@
-package calvert.jd.sudoku.panels;
+package calvert.jd.sudoku.ui;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

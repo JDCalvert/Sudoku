@@ -3,11 +3,9 @@ package calvert.jd.sudoku.game.logic;
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
 import calvert.jd.sudoku.game.rules.Rule;
+import calvert.jd.sudoku.game.util.CellUpdate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,15 +39,19 @@ public class CentreRegionMagicSquare extends LogicStage {
                 }
             }
         }
-
     }
 
     @Override
-    public void processCellUpdate(GameState gameState, Cell cell) {
+    public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
+        Cell cell = cellUpdate.getCell();
         if (isValidForCell(cell)) {
-            gameState.getCells().stream()
+            Stream.of(SUDOKU_ROW_RULE, SUDOKU_COLUMN_RULE, LEADING_DIAGONAL_DOWN_RULE, LEADING_DIAGONAL_UP_RULE)
+                .map(Rule.RuleIdentifier::getRule)
+                .map(rule -> rule.getVisibleCells(gameState, cell))
+                .flatMap(Collection::stream)
+                .distinct()
                 .filter(this::isValidForCell)
-                .forEach(magicSquareCell -> gameState.addToProcessQueue(cell, CENTRE_REGION_MAGIC_SQUARE));
+                .forEach(magicSquareCell -> gameState.addToProcessQueue(magicSquareCell, CENTRE_REGION_MAGIC_SQUARE));
         }
     }
 

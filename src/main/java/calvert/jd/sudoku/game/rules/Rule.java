@@ -55,7 +55,8 @@ public abstract class Rule {
         LEADING_DIAGONAL_DOWN_RULE(new LeadingDiagonalDownRule()),
         LEADING_DIAGONAL_UP_RULE(new LeadingDiagonalUpRule()),
         KNIGHTS_MOVE_RULE(new KnightsMoveRule()),
-        KINGS_MOVE_RULE(new KingsMoveRule());
+        KINGS_MOVE_RULE(new KingsMoveRule()),
+        ADJACENT_SEQUENTIAL_RULE(new AdjacentNonSequentialRule());
 
         private final Rule rule;
 

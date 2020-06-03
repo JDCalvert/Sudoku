@@ -1,10 +1,13 @@
-package calvert.jd.sudoku.panels;
+package calvert.jd.sudoku.ui;
 
+import calvert.jd.sudoku.actioncontrol.GameStateListener;
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameParameters;
 import calvert.jd.sudoku.game.GameState;
 import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
 import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
+import calvert.jd.sudoku.ui.components.LinkedCheckBox;
+import calvert.jd.sudoku.ui.components.NumberSpinner;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,14 +26,14 @@ import java.util.Optional;
 
 import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.*;
 import static calvert.jd.sudoku.game.rules.Rule.RuleIdentifier.*;
-import static calvert.jd.sudoku.panels.PuzzleSurface.CELL_SIZE;
 import static java.awt.BorderLayout.CENTER;
 import static java.awt.Color.LIGHT_GRAY;
 import static javax.swing.GroupLayout.DEFAULT_SIZE;
+import static javax.swing.GroupLayout.PREFERRED_SIZE;
 
-public class SudokuSurface extends JPanel implements ActionListener, KeyListener {
+public class SudokuSurface extends JPanel implements ActionListener, KeyListener, GameStateListener {
 
-    private static final int SIZE = CELL_SIZE * 9 + 10;
+    private static final int SIZE = PuzzleSurface.CELL_SIZE * 9 + 10;
 
     private final GameState gameState;
 
@@ -43,6 +46,7 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
     private JCheckBox leadingDiagonalsRuleCheckbox;
     private JCheckBox knightsMoveRuleCheckbox;
     private JCheckBox kingsMoveRuleCheckbox;
+    private JCheckBox adjacentSquaresCheckbox;
     private JCheckBox magicCentreSquareCheckbox;
 
     private JPanel logicStagesPanel;
@@ -52,6 +56,12 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
     private JCheckBox onlyCellWithPossibilityCheckbox;
 
     private JPanel inputPanel;
+    private JButton upButton;
+    private JButton downButton;
+    private JButton leftButton;
+    private JButton rightButton;
+    private JButton clearButton;
+    private List<JButton> numberButtons = new ArrayList<>();
 
     private JPanel buttonPanel;
     private JButton startButton;
@@ -61,10 +71,12 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
     private JButton clearAllButton;
     private JButton saveSetupButton;
     private JButton loadSetupButton;
+    private JCheckBox doUpdatesCheckbox;
+    private JSpinner updateDelaySpinner;
 
     public SudokuSurface() {
         this.gameState = new GameState();
-        this.gameState.addActionListener(this);
+        this.gameState.addGameStateListener(this);
         init();
     }
 
@@ -90,6 +102,7 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         this.leadingDiagonalsRuleCheckbox = new JCheckBox("Leading Diagonals");
         this.knightsMoveRuleCheckbox = new JCheckBox("Knight's Move");
         this.kingsMoveRuleCheckbox = new JCheckBox("King's Move");
+        this.adjacentSquaresCheckbox = new JCheckBox("Adjacent Cells Not Sequential");
         this.magicCentreSquareCheckbox = new JCheckBox("Centre Region Magic Square");
 
         this.standardRulesCheckbox.setSelected(true);
@@ -101,6 +114,7 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
                 .addComponent(this.knightsMoveRuleCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(this.kingsMoveRuleCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(this.magicCentreSquareCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(this.adjacentSquaresCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
         );
         rulesPanelLayout.setVerticalGroup(
             rulesPanelLayout.createSequentialGroup()
@@ -109,8 +123,9 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
                 .addComponent(this.knightsMoveRuleCheckbox)
                 .addComponent(this.kingsMoveRuleCheckbox)
                 .addComponent(this.magicCentreSquareCheckbox)
-        );
+                .addComponent(this.adjacentSquaresCheckbox)
 
+        );
         this.logicStagesPanel = new JPanel();
         this.logicStagesPanel.setBorder(BorderFactory.createTitledBorder("Logic Stages"));
         GroupLayout logicStagesGroupLayout = createGroupLayout(this.logicStagesPanel);
@@ -144,50 +159,47 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         this.inputPanel.setBorder(BorderFactory.createTitledBorder("Input"));
         GroupLayout inputPanelLayout = createGroupLayout(this.inputPanel);
 
-        List<JButton> numberButtons = new ArrayList<>();
+        this.numberButtons = new ArrayList<>();
         for (int i = 1; i <= 9; i++) {
-            numberButtons.add(createButton(String.valueOf(i)));
+            this.numberButtons.add(createButton(String.valueOf(i)));
         }
 
-        JButton clearButton = new JButton("Clear");
-        clearButton.setActionCommand("clear");
-        clearButton.addActionListener(this);
-
-        JButton upButton = createButton("Up");
-        JButton downButton = createButton("Down");
-        JButton leftButton = createButton("Left");
-        JButton rightButton = createButton("Right");
+        this.clearButton = createButton("Clear");
+        this.upButton = createButton("Up");
+        this.downButton = createButton("Down");
+        this.leftButton = createButton("Left");
+        this.rightButton = createButton("Right");
 
         inputPanelLayout.setHorizontalGroup(
             inputPanelLayout.createSequentialGroup()
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(numberButtons.get(0), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(numberButtons.get(3), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(numberButtons.get(6), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(clearButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(0), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(3), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(6), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.clearButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(leftButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.leftButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(0, 0, Short.MAX_VALUE)
                 )
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(numberButtons.get(1), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(numberButtons.get(4), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(numberButtons.get(7), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(1), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(4), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(7), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(upButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.upButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(downButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.downButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                 )
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(numberButtons.get(2), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(numberButtons.get(5), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(numberButtons.get(8), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(2), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(5), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.numberButtons.get(8), DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(rightButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.rightButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(0, 0, Short.MAX_VALUE)
                 )
         );
@@ -195,38 +207,38 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
             inputPanelLayout.createSequentialGroup()
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(numberButtons.get(0))
-                        .addComponent(numberButtons.get(1))
-                        .addComponent(numberButtons.get(2))
+                        .addComponent(this.numberButtons.get(0))
+                        .addComponent(this.numberButtons.get(1))
+                        .addComponent(this.numberButtons.get(2))
                 )
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(numberButtons.get(3))
-                        .addComponent(numberButtons.get(4))
-                        .addComponent(numberButtons.get(5))
+                        .addComponent(this.numberButtons.get(3))
+                        .addComponent(this.numberButtons.get(4))
+                        .addComponent(this.numberButtons.get(5))
                 )
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(numberButtons.get(6))
-                        .addComponent(numberButtons.get(7))
-                        .addComponent(numberButtons.get(8))
+                        .addComponent(this.numberButtons.get(6))
+                        .addComponent(this.numberButtons.get(7))
+                        .addComponent(this.numberButtons.get(8))
                 )
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(clearButton)
+                        .addComponent(this.clearButton)
                 )
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(upButton)
+                        .addComponent(this.upButton)
                 )
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(leftButton)
-                        .addComponent(rightButton)
+                        .addComponent(this.leftButton)
+                        .addComponent(this.rightButton)
                 )
                 .addGroup(
                     inputPanelLayout.createParallelGroup()
-                        .addComponent(downButton)
+                        .addComponent(this.downButton)
                 )
         );
 
@@ -241,45 +253,61 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         this.clearAllButton = createButton("Clear All");
         this.saveSetupButton = createButton("Save");
         this.loadSetupButton = createButton("Load");
+        this.doUpdatesCheckbox = new LinkedCheckBox("Pause Between Updates", this.gameState::setDoUpdates);
+        this.updateDelaySpinner = new NumberSpinner(this.gameState::setUpdateDelay, new SpinnerNumberModel(100, 100, 1000, 100));
+
+        this.doUpdatesCheckbox.setSelected(true);
 
         buttonPanelLayout.setHorizontalGroup(
-            buttonPanelLayout.createSequentialGroup()
+            buttonPanelLayout.createParallelGroup()
                 .addGroup(
-                    buttonPanelLayout.createParallelGroup()
-                        .addComponent(this.startButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(this.stopButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(this.clearAllButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(this.saveSetupButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                    buttonPanelLayout.createSequentialGroup()
+                        .addGroup(
+                            buttonPanelLayout.createParallelGroup()
+                                .addComponent(this.startButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(this.stopButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(this.clearAllButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(this.saveSetupButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        )
+                        .addGroup(
+                            buttonPanelLayout.createParallelGroup()
+                                .addComponent(this.pauseButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(this.resetButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(this.loadSetupButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        )
                 )
                 .addGroup(
                     buttonPanelLayout.createParallelGroup()
-                        .addComponent(this.pauseButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(this.resetButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(this.loadSetupButton, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.doUpdatesCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(this.updateDelaySpinner, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                 )
         );
         buttonPanelLayout.setVerticalGroup(
             buttonPanelLayout.createSequentialGroup()
                 .addGroup(
-                    buttonPanelLayout.createParallelGroup()
-                        .addComponent(this.startButton)
-                        .addComponent(this.pauseButton)
+                    buttonPanelLayout.createSequentialGroup()
+                        .addGroup(
+                            buttonPanelLayout.createParallelGroup()
+                                .addComponent(this.startButton)
+                                .addComponent(this.pauseButton)
+                        )
+                        .addGroup(
+                            buttonPanelLayout.createParallelGroup()
+                                .addComponent(this.stopButton)
+                                .addComponent(this.resetButton)
+                        )
+                        .addGroup(
+                            buttonPanelLayout.createParallelGroup()
+                                .addComponent(this.clearAllButton)
+                        )
+                        .addGroup(
+                            buttonPanelLayout.createParallelGroup()
+                                .addComponent(this.saveSetupButton)
+                                .addComponent(this.loadSetupButton)
+                        )
+                        .addComponent(this.doUpdatesCheckbox)
+                        .addComponent(this.updateDelaySpinner, PREFERRED_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
                 )
-                .addGroup(
-                    buttonPanelLayout.createParallelGroup()
-                        .addComponent(this.stopButton)
-                        .addComponent(this.resetButton)
-                )
-                .addGroup(
-                    buttonPanelLayout.createParallelGroup()
-                        .addComponent(this.clearAllButton)
-                )
-                .addGroup(
-                    buttonPanelLayout.createParallelGroup()
-                        .addComponent(this.saveSetupButton)
-                        .addComponent(this.loadSetupButton)
-                )
-
         );
 
         controlPanelLayout.setHorizontalGroup(
@@ -324,76 +352,6 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
             });
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        String actionCommand = e.getActionCommand();
-        if (actionCommand.equals("start")) {
-            enablePanelsForStarted();
-            this.gameState.start(buildGameParameters());
-        } else if (actionCommand.equals("pause")) {
-            this.gameState.togglePause();
-            if (this.pauseButton.getText().equals("Pause")) {
-                this.pauseButton.setText("Resume");
-            } else if (this.pauseButton.getText().equals("Resume")) {
-                this.pauseButton.setText("Pause");
-            }
-        } else if (actionCommand.equals("stop")) {
-            enablePanelsForStopped();
-            this.gameState.stop();
-        } else if (actionCommand.equals("reset")) {
-            this.gameState.reset();
-        } else if (actionCommand.equals("done")) {
-            enablePanelsForStopped();
-        } else if (actionCommand.equals("up")) {
-            this.gameState.moveSelectedCellUp();
-        } else if (actionCommand.equals("down")) {
-            this.gameState.moveSelectedCellDown();
-        } else if (actionCommand.equals("left")) {
-            this.gameState.moveSelectedCellLeft();
-        } else if (actionCommand.equals("right")) {
-            this.gameState.moveSelectedCellRight();
-        } else if (actionCommand.equals("clear")) {
-            this.gameState.getSelectedCells().forEach(cell -> cell.setInitialValue(null));
-        } else if (actionCommand.equals("clearAll")) {
-            this.gameState.clear();
-        } else if (actionCommand.equals("save")) {
-            File file = new File("save.txt");
-            try {
-                FileWriter fileWriter = new FileWriter(file);
-                for (Cell cell : this.gameState.getCells()) {
-                    fileWriter.write(Optional.ofNullable(cell.getInitialValue()).map(String::valueOf).orElse("0"));
-                }
-                fileWriter.flush();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        } else if (actionCommand.equals("load")) {
-            File file = new File("save.txt");
-            try {
-                FileReader fileReader = new FileReader(file);
-                List<Cell> cellsList = this.gameState.getCells();
-                for (Cell cell : cellsList) {
-                    int value = Integer.parseInt(String.valueOf((char) fileReader.read()));
-                    if (value > 0) {
-                        cell.setInitialValue(value);
-                    }
-                }
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-
-        char[] chars = actionCommand.toCharArray();
-        if (chars.length > 0) {
-            char aChar = chars[0];
-            if (aChar >= '1' && aChar <= '9') {
-                this.gameState.getSelectedCells().forEach(cell -> cell.setInitialValue(Integer.valueOf(String.valueOf(aChar))));
-            }
-        }
-
-        repaint();
-    }
-
     private GameParameters buildGameParameters() {
         List<RuleIdentifier> rules = new ArrayList<>();
         List<LogicStageIdentifier> logicStages = new ArrayList<>();
@@ -411,6 +369,9 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         }
         if (this.kingsMoveRuleCheckbox.isSelected()) {
             rules.add(KINGS_MOVE_RULE);
+        }
+        if (this.adjacentSquaresCheckbox.isSelected()) {
+            rules.add(ADJACENT_SEQUENTIAL_RULE);
         }
 
         if (this.magicCentreSquareCheckbox.isSelected()) {
@@ -468,6 +429,81 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         }
     }
 
+    private void saveSetup() {
+        File file = new File("save.txt");
+        try {
+            FileWriter fileWriter = new FileWriter(file);
+            for (Cell cell : this.gameState.getCells()) {
+                fileWriter.write(Optional.ofNullable(cell.getInitialValue()).map(String::valueOf).orElse("0"));
+            }
+            fileWriter.flush();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private void loadSetup() {
+        File file = new File("save.txt");
+        try {
+            FileReader fileReader = new FileReader(file);
+            List<Cell> cellsList = this.gameState.getCells();
+            for (Cell cell : cellsList) {
+                int value = Integer.parseInt(String.valueOf((char) fileReader.read()));
+                if (value > 0) {
+                    cell.setInitialValue(value);
+                }
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Object source = e.getSource();
+        if (source == this.startButton) {
+            enablePanelsForStarted();
+            this.gameState.start(buildGameParameters());
+        } else if (source == this.pauseButton) {
+            if (this.pauseButton.getText().equals("Pause")) {
+                this.pauseButton.setText("Resume");
+            } else if (this.pauseButton.getText().equals("Resume")) {
+                this.pauseButton.setText("Pause");
+            }
+            this.gameState.togglePause();
+        } else if (source == this.stopButton) {
+            this.gameState.stop();
+        } else if (source == this.resetButton) {
+            this.gameState.reset();
+        } else if (source == this.upButton) {
+            this.gameState.moveSelectedCellUp();
+        } else if (source == this.downButton) {
+            this.gameState.moveSelectedCellDown();
+        } else if (source == this.leftButton) {
+            this.gameState.moveSelectedCellLeft();
+        } else if (source == this.rightButton) {
+            this.gameState.moveSelectedCellRight();
+        } else if (source == this.clearButton) {
+            this.gameState.getSelectedCells().forEach(cell -> cell.setInitialValue(null));
+        } else if (source == this.clearAllButton) {
+            this.gameState.clear();
+        } else if (source == this.saveSetupButton) {
+            saveSetup();
+        } else if (source == this.loadSetupButton) {
+            loadSetup();
+        } else {
+            char[] chars = e.getActionCommand().toCharArray();
+            if (chars.length > 0) {
+                char aChar = chars[0];
+                if (aChar >= '1' && aChar <= '9') {
+                    this.gameState.getSelectedCells().forEach(cell -> cell.setInitialValue(Integer.valueOf(String.valueOf(aChar))));
+                }
+            }
+        }
+
+        repaint();
+    }
+
     @Override
     public void keyTyped(KeyEvent e) {
     }
@@ -492,5 +528,16 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
 
     @Override
     public void keyReleased(KeyEvent e) {
+    }
+
+    @Override
+    public void update() {
+        repaint();
+    }
+
+    @Override
+    public void done() {
+        enablePanelsForStopped();
+        repaint();
     }
 }

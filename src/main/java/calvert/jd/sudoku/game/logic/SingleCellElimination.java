@@ -2,6 +2,7 @@ package calvert.jd.sudoku.game.logic;
 
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
+import calvert.jd.sudoku.game.util.CellUpdate;
 
 import java.util.List;
 
@@ -15,7 +16,8 @@ import static java.util.Objects.nonNull;
 public class SingleCellElimination extends LogicStage {
 
     @Override
-    public void processCellUpdate(GameState gameState, Cell cell) {
+    public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
+        Cell cell = cellUpdate.getCell();
         if (isValidForCell(cell)) {
             gameState.addToProcessQueue(cell, SINGLE_CELL_ELIMINATION);
         }

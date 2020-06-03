@@ -3,6 +3,7 @@ package calvert.jd.sudoku.game.logic;
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
 import calvert.jd.sudoku.game.rules.Rule;
+import calvert.jd.sudoku.game.util.CellUpdate;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,18 +24,18 @@ import static java.util.Objects.nonNull;
 public class MultipleCellElimination extends LogicStage {
 
     @Override
-    public void processCellUpdate(GameState gameState, Cell cell) {
+    public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
+        Cell cell = cellUpdate.getCell();
         if (nonNull(cell.getValue())) {
             return;
         }
-
-        gameState.addToProcessQueue(cell, MULTIPLE_CELL_ELIMINATION);
 
         gameState.getRules().stream()
             .filter(rule -> rule.appliesToCell(cell))
             .map(rule -> rule.getVisibleCells(gameState, cell))
             .flatMap(Collection::stream)
             .distinct()
+            .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
             .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, MULTIPLE_CELL_ELIMINATION));
     }
 
@@ -48,11 +49,11 @@ public class MultipleCellElimination extends LogicStage {
         gameState.getRules().stream()
             .filter(rule -> rule.appliesToCell(cell))
             .filter(Rule::isInclusive)
-            .forEach(inclusiveRule -> {
+            .forEach(rule -> {
                 gameState.setSelectedCell(cell);
                 gameState.update();
 
-                List<Cell> cellsInRule = inclusiveRule.getVisibleCells(gameState, cell);
+                List<Cell> cellsInRule = rule.getVisibleCells(gameState, cell);
 
                 cell.getPossibleValues().forEach(possibleValue -> {
                     gameState.setSelectedCell(cell);
@@ -80,14 +81,16 @@ public class MultipleCellElimination extends LogicStage {
                             }
                         );
 
-                    gameState.setCalculationCells(cellsVisibleByAll);
-                    gameState.update();
-
-                    Boolean updated = cellsVisibleByAll.stream()
-                        .map(cellToRemovePossibility -> cellToRemovePossibility.removePossibleValue(possibleValue))
-                        .reduce(false, (a, b) -> a || b);
-                    if (updated) {
+                    if (!cellsVisibleByAll.isEmpty()) {
+                        gameState.setCalculationCells(cellsVisibleByAll);
                         gameState.update();
+
+                        Boolean updated = cellsVisibleByAll.stream()
+                            .map(cellToRemovePossibility -> cellToRemovePossibility.removePossibleValue(possibleValue))
+                            .reduce(false, (a, b) -> a || b);
+                        if (updated) {
+                            gameState.update();
+                        }
                     }
                 });
             });
