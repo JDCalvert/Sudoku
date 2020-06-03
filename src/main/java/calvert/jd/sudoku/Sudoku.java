@@ -1,6 +1,6 @@
 package calvert.jd.sudoku;
 
-import calvert.jd.sudoku.panels.SudokuFrame;
+import calvert.jd.sudoku.ui.SudokuFrame;
 
 import javax.swing.*;
 import java.awt.*;

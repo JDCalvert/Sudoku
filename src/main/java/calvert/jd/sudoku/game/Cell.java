@@ -1,9 +1,9 @@
 package calvert.jd.sudoku.game;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import calvert.jd.sudoku.game.util.CellUpdate;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -37,7 +37,7 @@ public class Cell implements Comparable<Cell> {
     public void setValue(Integer value) {
         this.value = value;
         this.possibleValues = emptyList();
-        this.gameState.handleCellUpdated(this);
+        this.gameState.handleCellUpdate(new CellUpdate(this, emptyList()));
     }
 
     public Integer getInitialValue() {
@@ -69,14 +69,23 @@ public class Cell implements Comparable<Cell> {
         return this.j;
     }
 
+    public boolean hasAnyPossibility(List<Integer> possibleValues) {
+        return !Collections.disjoint(this.possibleValues, possibleValues);
+    }
+
     public boolean removePossibleValue(Integer value) {
         return removePossibleValues(singletonList(value));
     }
 
     public boolean removePossibleValues(List<Integer> values) {
-        boolean removed = this.possibleValues.removeAll(values);
+        // Filter to values that are actually possibilities currently.
+        List<Integer> valuesToRemove = values.stream()
+            .filter(this.possibleValues::contains)
+            .collect(Collectors.toList());
+
+        boolean removed = this.possibleValues.removeAll(valuesToRemove);
         if (removed) {
-            this.gameState.handleCellUpdated(this);
+            this.gameState.handleCellUpdate(new CellUpdate(this, valuesToRemove));
 
             if (this.possibleValues.isEmpty()) {
                 this.gameState.setErrorCell(this);
@@ -91,5 +100,17 @@ public class Cell implements Comparable<Cell> {
     @Override
     public int compareTo(Cell o) {
         return Objects.compare(this, o, Comparator.comparingInt(Cell::getJ).thenComparingInt(Cell::getI));
+    }
+
+    @Override
+    public String toString() {
+        return new org.apache.commons.lang3.builder.ToStringBuilder(this)
+            .append("i", i)
+            .append("j", j)
+            .append("gameState", gameState)
+            .append("value", value)
+            .append("initialValue", initialValue)
+            .append("possibleValues", possibleValues)
+            .toString();
     }
 }

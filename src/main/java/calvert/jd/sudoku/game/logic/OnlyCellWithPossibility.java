@@ -3,6 +3,7 @@ package calvert.jd.sudoku.game.logic;
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
 import calvert.jd.sudoku.game.rules.Rule;
+import calvert.jd.sudoku.game.util.CellUpdate;
 
 import java.util.Collection;
 import java.util.List;
@@ -17,18 +18,18 @@ import static java.util.Objects.isNull;
 public class OnlyCellWithPossibility extends LogicStage {
 
     @Override
-    public void processCellUpdate(GameState gameState, Cell cell) {
+    public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
+        Cell cell = cellUpdate.getCell();
         if (!isValidForCell(cell)) {
             return;
         }
-
-        gameState.addToProcessQueue(cell, ONLY_CELL_WITH_POSSIBILITY);
 
         gameState.getRules().stream()
             .filter(rule -> rule.appliesToCell(cell))
             .map(rule -> rule.getVisibleCells(gameState, cell))
             .flatMap(Collection::stream)
             .distinct()
+            .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
             .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, ONLY_CELL_WITH_POSSIBILITY));
     }
 

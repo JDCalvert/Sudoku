@@ -1,4 +1,4 @@
-package calvert.jd.sudoku.panels;
+package calvert.jd.sudoku.ui;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,5 +23,9 @@ public class SudokuFrame extends JFrame {
         setBackground(LIGHT_GRAY);
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+        invalidate();
+        revalidate();
+        validate();
     }
 }

@@ -3,6 +3,7 @@ package calvert.jd.sudoku.game.logic;
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
 import calvert.jd.sudoku.game.rules.Rule;
+import calvert.jd.sudoku.game.util.CellUpdate;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,7 +23,8 @@ import static java.util.Objects.isNull;
 public class SharedPossibilitiesElimination extends LogicStage {
 
     @Override
-    public void processCellUpdate(GameState gameState, Cell cell) {
+    public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
+        Cell cell = cellUpdate.getCell();
         if (!isValidForCell(cell)) {
             return;
         }
@@ -34,6 +36,7 @@ public class SharedPossibilitiesElimination extends LogicStage {
             .map(rule -> rule.getVisibleCells(gameState, cell))
             .flatMap(Collection::stream)
             .distinct()
+            .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
             .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, SHARED_POSSIBILITIES_ELIMINATION));
     }
 

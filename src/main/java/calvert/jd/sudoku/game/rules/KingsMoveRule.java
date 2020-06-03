@@ -13,10 +13,11 @@ public class KingsMoveRule extends Rule {
     @Override
     public List<Cell> getVisibleCells(GameState gameState, Cell cell) {
         return gameState.getCells().stream()
-            .filter(someCell -> {
-                int iDiff = abs(cell.getI() - someCell.getI());
-                int jDiff = abs(cell.getJ() - someCell.getJ());
-                return iDiff == 1 || jDiff == 1;
+            .filter(possibleCell -> possibleCell != cell)
+            .filter(possibleCell -> {
+                int iDiff = abs(cell.getI() - possibleCell.getI());
+                int jDiff = abs(cell.getJ() - possibleCell.getJ());
+                return iDiff <= 1 && jDiff <= 1;
             })
             .collect(Collectors.toList());
     }

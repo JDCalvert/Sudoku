@@ -2,6 +2,7 @@ package calvert.jd.sudoku.game.logic;
 
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
+import calvert.jd.sudoku.game.util.CellUpdate;
 
 /**
  * Abstract class to represent some logic to solve the puzzle. Each piece of logic uses one cell as a base to either
@@ -12,10 +13,10 @@ public abstract class LogicStage {
     /**
      * Given the cell was updated, add cells to the process queue to be processed by this logic.
      *
-     * @param gameState the current game state
-     * @param cell      the cell that was updated
+     * @param gameState  the current game state
+     * @param cellUpdate information about the cell update
      */
-    public abstract void processCellUpdate(GameState gameState, Cell cell);
+    public abstract void processCellUpdate(GameState gameState, CellUpdate cellUpdate);
 
     /**
      * Some logic should only be run on certain cells. The cell might have become invalid for the logic stage by the time it's reached in the queue.
