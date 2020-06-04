@@ -1,0 +1,1 @@
+{"cells":[{"i":4,"j":2,"value":4},{"i":2,"j":3,"value":3}],"rules":["SUDOKU_ROW_RULE","SUDOKU_COLUMN_RULE","SUDOKU_REGION_RULE","KNIGHTS_MOVE_RULE","KINGS_MOVE_RULE","ADJACENT_SEQUENTIAL_RULE"],"constraints":[]}
