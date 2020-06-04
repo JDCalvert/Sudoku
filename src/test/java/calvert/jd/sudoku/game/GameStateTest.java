@@ -71,6 +71,8 @@ public class GameStateTest {
         pollUntilDone();
 
         assertThat(this.gameState.isComplete(), is(true));
+
+        System.out.println(this.file.getName() + ": numQueueProcesses=" + this.gameState.getNumQueueProcesses() + " numUpdates=" + this.gameState.getNumUpdates());
     }
 
     private void pollUntilDone() throws InterruptedException {

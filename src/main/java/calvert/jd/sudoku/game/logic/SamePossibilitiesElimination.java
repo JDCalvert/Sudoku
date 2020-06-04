@@ -56,13 +56,13 @@ public class SamePossibilitiesElimination extends LogicStage {
             .filter(rule -> rule.appliesToCell(cell))
             .filter(Rule::isInclusive)
             .forEach(inclusiveRule -> {
-                /*gameState.setSelectedCell(cell);
+                gameState.setSelectedCell(cell);
                 gameState.setCalculationCells(emptyList());
-                gameState.update();*/
+                gameState.update();
 
                 List<Cell> cellsInRule = inclusiveRule.getVisibleCells(gameState, cell);
-                /*gameState.setCalculationCells(cellsInRule);
-                gameState.update();*/
+                gameState.setCalculationCells(cellsInRule);
+                gameState.update();
 
                 List<Cell> cellsSharingPossibilities = getCellsWithSamePossibilities(cell, cellsInRule);
                 if (cellsSharingPossibilities.size() == cell.getPossibleValues().size()) {
