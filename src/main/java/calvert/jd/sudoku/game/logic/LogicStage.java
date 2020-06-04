@@ -24,37 +24,10 @@ public abstract class LogicStage {
     public abstract boolean isValidForCell(Cell cell);
 
     /**
-     * Run the piece of logic on the given cell.
+     * Run the piece of logic on the given logicConstraint.
      *
-     * @param cell the cell to start our logic on
+     * @param logicConstraint information about how to run the logic
      */
-    public abstract void runLogic(GameState gameState, Cell cell);
+    public abstract void runLogic(GameState gameState, LogicConstraint logicConstraint);
 
-    /**
-     * Enumerate the logic stages.
-     */
-    public enum LogicStageIdentifier {
-        SINGLE_CELL_ELIMINATION(new SingleCellElimination(), false),
-        CENTRE_REGION_MAGIC_SQUARE(new CentreRegionMagicSquare(), true),
-        SHARED_POSSIBILITIES_ELIMINATION(new SharedPossibilitiesElimination(), false),
-        SAME_POSSIBILITIES_ELIMINATION(new SamePossibilitiesElimination(), false),
-        ONLY_CELL_WITH_POSSIBILITY(new OnlyCellWithPossibility(), false),
-        MULTIPLE_CELL_ELIMINATION(new MultipleCellElimination(), false);
-
-        private final LogicStage logicStage;
-        private final boolean isConstraint;
-
-        LogicStageIdentifier(LogicStage logicStage, boolean isConstraint) {
-            this.logicStage = logicStage;
-            this.isConstraint = isConstraint;
-        }
-
-        public LogicStage getLogicStage() {
-            return this.logicStage;
-        }
-
-        public boolean isConstraint() {
-            return this.isConstraint;
-        }
-    }
 }

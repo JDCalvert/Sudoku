@@ -1,7 +1,9 @@
-package calvert.jd.sudoku.game.logic;
+package calvert.jd.sudoku.game.logic.logicstages;
 
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
+import calvert.jd.sudoku.game.logic.LogicConstraint;
+import calvert.jd.sudoku.game.logic.LogicStage;
 import calvert.jd.sudoku.game.rules.Rule;
 import calvert.jd.sudoku.game.util.CellUpdate;
 
@@ -12,7 +14,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.SAME_POSSIBILITIES_ELIMINATION;
+import static calvert.jd.sudoku.game.logic.LogicStageIdentifier.SAME_POSSIBILITIES_ELIMINATION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
@@ -30,7 +32,7 @@ public class SamePossibilitiesElimination extends LogicStage {
             return;
         }
 
-        gameState.addToProcessQueue(cell, SAME_POSSIBILITIES_ELIMINATION);
+        gameState.addToProcessQueue(SAME_POSSIBILITIES_ELIMINATION, new LogicConstraint(cell));
 
         gameState.getRules().stream()
             .filter(rule -> rule.appliesToCell(cell))
@@ -38,7 +40,7 @@ public class SamePossibilitiesElimination extends LogicStage {
             .flatMap(Collection::stream)
             .distinct()
             .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
-            .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, SAME_POSSIBILITIES_ELIMINATION));
+            .forEach(visibleCell -> gameState.addToProcessQueue(SAME_POSSIBILITIES_ELIMINATION, new LogicConstraint(visibleCell)));
     }
 
     @Override
@@ -47,7 +49,9 @@ public class SamePossibilitiesElimination extends LogicStage {
     }
 
     @Override
-    public void runLogic(GameState gameState, Cell cell) {
+    public void runLogic(GameState gameState, LogicConstraint constraint) {
+        Cell cell = constraint.getCell();
+
         if (!isValidForCell(cell)) {
             return;
         }

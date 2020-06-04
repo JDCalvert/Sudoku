@@ -2,8 +2,9 @@ package calvert.jd.sudoku.game;
 
 import calvert.jd.sudoku.actioncontrol.GameLoggingListener;
 import calvert.jd.sudoku.actioncontrol.GameStateListener;
+import calvert.jd.sudoku.game.logic.LogicConstraint;
 import calvert.jd.sudoku.game.logic.LogicStage;
-import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
+import calvert.jd.sudoku.game.logic.LogicStageIdentifier;
 import calvert.jd.sudoku.game.rules.Rule;
 import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
 import calvert.jd.sudoku.game.util.CellUpdate;
@@ -67,8 +68,8 @@ public class GameState {
         return this.numUpdates;
     }
 
-    public void addToProcessQueue(Cell cell, LogicStageIdentifier logicStageIdentifier) {
-        this.processQueue.add(new LogicQueueEntry(cell, logicStageIdentifier));
+    public void addToProcessQueue(LogicStageIdentifier logicStageIdentifier, LogicConstraint logicConstraint) {
+        this.processQueue.add(new LogicQueueEntry(logicStageIdentifier, logicConstraint));
     }
 
     public void start(GameParameters gameParameters) {
@@ -112,14 +113,13 @@ public class GameState {
         log("Initialising...");
 
         // Build initial list of cells to process, and reset possible values for blank cells.
-        for (Cell cell : this.cells) {
-            setSelectedCell(cell);
+        this.cells.forEach(cell -> {
             if (nonNull(cell.getInitialValue())) {
                 cell.setValue(cell.getInitialValue());
             } else {
                 cell.resetPossibleValues();
             }
-        }
+        });
 
         processCells();
     }
@@ -129,12 +129,13 @@ public class GameState {
             LogicQueueEntry logicQueueEntry = this.processQueue.poll();
 
             LogicStage logicStage = logicQueueEntry.getLogicStageIdentifier().getLogicStage();
-            Cell cell = logicQueueEntry.getCell();
+            LogicConstraint logicConstraint = logicQueueEntry.getLogicConstraint();
+            Cell cell = logicConstraint.getCell();
 
             if (logicStage.isValidForCell(cell)) {
                 this.log("About to process cell=" + cell + " for logic " + logicQueueEntry.getLogicStageIdentifier());
 
-                logicStage.runLogic(this, cell);
+                logicStage.runLogic(this, logicConstraint);
                 setSelectedCells(emptyList());
                 setCalculationCells(emptyList());
                 this.numQueueProcesses++;

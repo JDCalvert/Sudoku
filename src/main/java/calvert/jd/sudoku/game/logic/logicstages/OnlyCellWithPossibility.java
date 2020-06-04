@@ -1,7 +1,9 @@
-package calvert.jd.sudoku.game.logic;
+package calvert.jd.sudoku.game.logic.logicstages;
 
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
+import calvert.jd.sudoku.game.logic.LogicConstraint;
+import calvert.jd.sudoku.game.logic.LogicStage;
 import calvert.jd.sudoku.game.rules.Rule;
 import calvert.jd.sudoku.game.util.CellUpdate;
 
@@ -9,7 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.ONLY_CELL_WITH_POSSIBILITY;
+import static calvert.jd.sudoku.game.logic.LogicStageIdentifier.ONLY_CELL_WITH_POSSIBILITY;
 import static java.util.Objects.isNull;
 
 /**
@@ -30,7 +32,11 @@ public class OnlyCellWithPossibility extends LogicStage {
             .flatMap(Collection::stream)
             .distinct()
             .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
-            .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, ONLY_CELL_WITH_POSSIBILITY));
+            .forEach(visibleCell ->
+                visibleCell.getPossibleValues().stream()
+                    .filter(possibleValue -> cellUpdate.getRemovedPossibilities().contains(possibleValue))
+                    .forEach(possibleValue -> gameState.addToProcessQueue(ONLY_CELL_WITH_POSSIBILITY, new LogicConstraint(visibleCell, possibleValue)))
+            );
     }
 
     @Override
@@ -39,9 +45,12 @@ public class OnlyCellWithPossibility extends LogicStage {
     }
 
     @Override
-    public void runLogic(GameState gameState, Cell cell) {
-        // If this cell already has a value, we can skip this logic.
-        if (!isValidForCell(cell)) {
+    public void runLogic(GameState gameState, LogicConstraint constraint) {
+        Cell cell = constraint.getCell();
+        Integer possibleValue = constraint.getValue();
+
+        // If this cell already has a possibleValue, we can skip this logic.
+        if (!isValidForCell(cell) || !cell.getPossibleValues().contains(possibleValue)) {
             return;
         }
 
@@ -58,20 +67,8 @@ public class OnlyCellWithPossibility extends LogicStage {
             gameState.setCalculationCells(visibleCells);
             gameState.update();
 
-            List<Integer> values = cell.getPossibleValues().stream()
-                .filter(possibleValue ->
-                    visibleCells.stream().noneMatch(
-                        visibleCell -> visibleCell.getPossibleValues().contains(possibleValue) || possibleValue.equals(visibleCell.getValue())
-                    )
-                )
-                .collect(Collectors.toList());
-
-            // We should have found one or zero values. If we got more than one, something is wrong. If we got exactly one value, then this cell must have that value
-            if (values.size() > 1) {
-                gameState.setErrorCell(cell);
-                return;
-            } else if (!values.isEmpty()) {
-                cell.setValue(values.get(0));
+            if (visibleCells.stream().noneMatch(visibleCell -> visibleCell.getPossibleValues().contains(possibleValue) || possibleValue.equals(visibleCell.getValue()))) {
+                cell.setValue(possibleValue);
                 gameState.update();
                 return;
             }

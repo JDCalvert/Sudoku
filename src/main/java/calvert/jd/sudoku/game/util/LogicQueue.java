@@ -1,7 +1,9 @@
 package calvert.jd.sudoku.game.util;
 
-import calvert.jd.sudoku.game.Cell;
-import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
+import calvert.jd.sudoku.game.logic.LogicConstraint;
+import calvert.jd.sudoku.game.logic.LogicStageIdentifier;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -35,20 +37,20 @@ public class LogicQueue extends LinkedList<LogicQueue.LogicQueueEntry> {
     }
 
     public static class LogicQueueEntry {
-        private final Cell cell;
         private final LogicStageIdentifier logicStageIdentifier;
+        private final LogicConstraint logicConstraint;
 
-        public LogicQueueEntry(Cell cell, LogicStageIdentifier logicStageIdentifier) {
-            this.cell = cell;
+        public LogicQueueEntry(LogicStageIdentifier logicStageIdentifier, LogicConstraint logicConstraint) {
             this.logicStageIdentifier = logicStageIdentifier;
-        }
-
-        public Cell getCell() {
-            return this.cell;
+            this.logicConstraint = logicConstraint;
         }
 
         public LogicStageIdentifier getLogicStageIdentifier() {
             return this.logicStageIdentifier;
+        }
+
+        public LogicConstraint getLogicConstraint() {
+            return this.logicConstraint;
         }
 
         @Override
@@ -62,13 +64,20 @@ public class LogicQueue extends LinkedList<LogicQueue.LogicQueueEntry> {
             }
 
             LogicQueueEntry that = (LogicQueueEntry) o;
-            return Objects.equals(this.cell, that.cell) &&
-                this.logicStageIdentifier == that.logicStageIdentifier;
+
+            return new EqualsBuilder()
+                .append(this.logicStageIdentifier, that.logicStageIdentifier)
+                .append(this.logicConstraint, that.logicConstraint)
+                .build();
+
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(this.cell, this.logicStageIdentifier);
+            return new HashCodeBuilder()
+                .append(this.logicStageIdentifier)
+                .append(this.logicConstraint)
+                .toHashCode();
         }
     }
 }

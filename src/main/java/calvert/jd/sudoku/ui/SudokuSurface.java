@@ -3,7 +3,7 @@ package calvert.jd.sudoku.ui;
 import calvert.jd.sudoku.actioncontrol.GameStateListener;
 import calvert.jd.sudoku.game.GameParameters;
 import calvert.jd.sudoku.game.GameState;
-import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
+import calvert.jd.sudoku.game.logic.LogicStageIdentifier;
 import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
 import calvert.jd.sudoku.game.save.SaveCell;
 import calvert.jd.sudoku.game.save.SaveGame;
@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.*;
+import static calvert.jd.sudoku.game.logic.LogicStageIdentifier.*;
 import static calvert.jd.sudoku.game.rules.Rule.RuleIdentifier.*;
 import static java.awt.Color.LIGHT_GRAY;
 import static java.util.Arrays.asList;
