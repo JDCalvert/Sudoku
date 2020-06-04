@@ -56,13 +56,13 @@ public class SharedPossibilitiesElimination extends LogicStage {
             .filter(rule -> rule.appliesToCell(cell))
             .filter(Rule::isInclusive)
             .forEach(inclusiveRule -> {
-                /*gameState.setSelectedCell(cell);
+                gameState.setSelectedCell(cell);
                 gameState.setCalculationCells(emptyList());
-                gameState.update();*/
+                gameState.update();
 
                 List<Cell> cellsInRule = inclusiveRule.getVisibleCells(gameState, cell);
-                /*gameState.setCalculationCells(cellsInRule);
-                gameState.update();*/
+                gameState.setCalculationCells(cellsInRule);
+                gameState.update();
 
                 // For this rule, find all cells that have all the same possibilities of this cell (even if they have more possibilities)
                 List<Cell> cellsSharingPossibilities = getCellsSharingPossibilities(cell, cellsInRule);

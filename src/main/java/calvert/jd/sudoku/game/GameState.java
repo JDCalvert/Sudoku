@@ -35,6 +35,7 @@ public class GameState {
     private long updateDelay = 100;
 
     private int numQueueProcesses = 0;
+    private int numUpdates = 0;
 
     private final Queue<LogicQueueEntry> processQueue = new LogicQueue();
 
@@ -58,6 +59,14 @@ public class GameState {
         this.selectedCells = emptyList();
     }
 
+    public int getNumQueueProcesses() {
+        return this.numQueueProcesses;
+    }
+
+    public int getNumUpdates() {
+        return this.numUpdates;
+    }
+
     public void addToProcessQueue(Cell cell, LogicStageIdentifier logicStageIdentifier) {
         this.processQueue.add(new LogicQueueEntry(cell, logicStageIdentifier));
     }
@@ -75,6 +84,7 @@ public class GameState {
 
         reinitialise();
         this.numQueueProcesses = 0;
+        this.numUpdates = 0;
 
         new Thread(this::start).start();
     }
@@ -182,6 +192,7 @@ public class GameState {
     }
 
     public void update() {
+        this.numUpdates++;
         if (this.doUpdates) {
             sendUpdate();
             try {
@@ -227,6 +238,7 @@ public class GameState {
 
     public void done() {
         log("Total queue entries processed: " + this.numQueueProcesses);
+        log("Total updates: " + this.numUpdates);
 
         this.running = false;
         setSelectedCells(emptyList());
