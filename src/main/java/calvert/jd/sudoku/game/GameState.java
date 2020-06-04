@@ -1,5 +1,6 @@
 package calvert.jd.sudoku.game;
 
+import calvert.jd.sudoku.actioncontrol.GameLoggingListener;
 import calvert.jd.sudoku.actioncontrol.GameStateListener;
 import calvert.jd.sudoku.game.logic.LogicStage;
 import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
@@ -44,6 +45,7 @@ public class GameState {
     private List<Cell> calculationCells = emptyList();
 
     private final List<GameStateListener> gameStateListeners = new ArrayList<>();
+    private final List<GameLoggingListener> gameLoggingListeners = new ArrayList<>();
 
     public GameState() {
         for (int i = 0; i < 9; i++) {
@@ -71,6 +73,7 @@ public class GameState {
             .map(LogicStageIdentifier::getLogicStage)
             .collect(Collectors.toList());
 
+        reinitialise();
         this.numQueueProcesses = 0;
 
         new Thread(this::start).start();
@@ -95,6 +98,9 @@ public class GameState {
 
         setErrorCells(emptyList());
 
+        clearLogging();
+        log("Initialising...");
+
         // Build initial list of cells to process, and reset possible values for blank cells.
         for (Cell cell : this.cells) {
             setSelectedCell(cell);
@@ -102,10 +108,6 @@ public class GameState {
                 cell.setValue(cell.getInitialValue());
             } else {
                 cell.resetPossibleValues();
-            }
-
-            if (checkStatus()) {
-                return;
             }
         }
 
@@ -120,6 +122,8 @@ public class GameState {
             Cell cell = logicQueueEntry.getCell();
 
             if (logicStage.isValidForCell(cell)) {
+                this.log("About to process cell=" + cell + " for logic " + logicQueueEntry.getLogicStageIdentifier());
+
                 logicStage.runLogic(this, cell);
                 setSelectedCells(emptyList());
                 setCalculationCells(emptyList());
@@ -139,7 +143,7 @@ public class GameState {
             done();
             return true;
         } else if (this.shouldPause) {
-            this.running = false;
+            paused();
             return true;
         }
         return false;
@@ -172,11 +176,14 @@ public class GameState {
 
     public void stop() {
         this.shouldStop = true;
+        if (!this.running) {
+            done();
+        }
     }
 
     public void update() {
         if (this.doUpdates) {
-            updateNoWait();
+            sendUpdate();
             try {
                 Thread.sleep(this.updateDelay);
             } catch (InterruptedException e) {
@@ -185,8 +192,16 @@ public class GameState {
         }
     }
 
-    private void updateNoWait() {
+    private void sendUpdate() {
         this.gameStateListeners.forEach(GameStateListener::update);
+    }
+
+    public void clearLogging() {
+        this.gameLoggingListeners.forEach(GameLoggingListener::clear);
+    }
+
+    public void log(String text) {
+        this.gameLoggingListeners.forEach(listener -> listener.log(text));
     }
 
     public void reset() {
@@ -199,18 +214,26 @@ public class GameState {
 
         this.processQueue.clear();
 
-        updateNoWait();
+        sendUpdate();
+    }
+
+    private void paused() {
+        this.running = false;
+        setSelectedCells(emptyList());
+        setCalculationCells(emptyList());
+
+        sendUpdate();
     }
 
     public void done() {
-        System.out.println("Total queue entries processed: " + this.numQueueProcesses);
+        log("Total queue entries processed: " + this.numQueueProcesses);
 
         this.running = false;
         setSelectedCells(emptyList());
         setCalculationCells(emptyList());
 
         this.gameStateListeners.forEach(GameStateListener::done);
-        updateNoWait();
+        sendUpdate();
     }
 
     public void handleCellUpdate(CellUpdate cellUpdate) {
@@ -306,5 +329,9 @@ public class GameState {
 
     public void addGameStateListener(GameStateListener listener) {
         this.gameStateListeners.add(listener);
+    }
+
+    public void addGameLoggingListener(GameLoggingListener listener) {
+        this.gameLoggingListeners.add(listener);
     }
 }

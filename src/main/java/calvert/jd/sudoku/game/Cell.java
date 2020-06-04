@@ -35,6 +35,8 @@ public class Cell implements Comparable<Cell> {
     }
 
     public void setValue(Integer value) {
+        logUpdate("set value=" + value);
+
         this.value = value;
         this.possibleValues = emptyList();
         this.gameState.handleCellUpdate(new CellUpdate(this, emptyList()));
@@ -83,8 +85,10 @@ public class Cell implements Comparable<Cell> {
             .filter(this.possibleValues::contains)
             .collect(Collectors.toList());
 
-        boolean removed = this.possibleValues.removeAll(valuesToRemove);
-        if (removed) {
+        if (!valuesToRemove.isEmpty()) {
+            logUpdate("remove possibilities=" + valuesToRemove);
+
+            this.possibleValues.removeAll(valuesToRemove);
             this.gameState.handleCellUpdate(new CellUpdate(this, valuesToRemove));
 
             if (this.possibleValues.isEmpty()) {
@@ -92,9 +96,14 @@ public class Cell implements Comparable<Cell> {
             } else if (this.possibleValues.size() == 1) {
                 setValue(this.possibleValues.get(0));
             }
+            return true;
         }
 
-        return removed;
+        return false;
+    }
+
+    private void logUpdate(String update) {
+        this.gameState.log("Update cell=" + this + " " + update);
     }
 
     @Override
@@ -104,13 +113,12 @@ public class Cell implements Comparable<Cell> {
 
     @Override
     public String toString() {
-        return new org.apache.commons.lang3.builder.ToStringBuilder(this)
-            .append("i", i)
-            .append("j", j)
-            .append("gameState", gameState)
-            .append("value", value)
-            .append("initialValue", initialValue)
-            .append("possibleValues", possibleValues)
+        return new StringBuilder(80)
+            .append(asList(this.i, this.j))
+            .append(" value=")
+            .append(Optional.ofNullable(this.value).map(String::valueOf).orElse(""))
+            .append(" possibleValues=")
+            .append(this.possibleValues)
             .toString();
     }
 }

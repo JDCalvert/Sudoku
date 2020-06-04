@@ -2,10 +2,10 @@ package calvert.jd.sudoku.game.rules;
 
 import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.BDDMockito.given;
 
-@ExtendWith(MockitoExtension.class)
+@RunWith(MockitoJUnitRunner.class)
 public abstract class AbstractRuleTest<R extends Rule> {
 
     @Mock
@@ -28,7 +28,7 @@ public abstract class AbstractRuleTest<R extends Rule> {
         this.rule = getRule();
     }
 
-    @BeforeEach
+    @Before
     public void init() {
         this.cells = new Cell[9][9];
 

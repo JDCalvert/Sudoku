@@ -1,10 +1,10 @@
 package calvert.jd.sudoku.game.rules;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
 
-class KnightsMoveRuleTest extends AbstractRuleTest<KnightsMoveRule> {
+public class KnightsMoveRuleTest extends AbstractRuleTest<KnightsMoveRule> {
 
     @Override
     protected KnightsMoveRule getRule() {

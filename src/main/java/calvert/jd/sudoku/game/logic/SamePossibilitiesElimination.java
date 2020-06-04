@@ -8,20 +8,20 @@ import calvert.jd.sudoku.game.util.CellUpdate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.SHARED_POSSIBILITIES_ELIMINATION;
+import static calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier.SAME_POSSIBILITIES_ELIMINATION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 
 /**
- * For an inclusive rule, if we have X probabilities and we find X cells with those same probabilities (even if they have more), then we can do two things:
- * 1. Remove the other probabilities from those cells.
- * 2. Remove the shared probabilities from all other cells visible to all X cells.
+ * For an inclusive rule, if we have X probabilities, and we find X cells (including ourselves) with the exact same probabilities, then we can remove those probabilities from all
+ * cells that those X cells can see.
  */
-public class SharedPossibilitiesElimination extends LogicStage {
+public class SamePossibilitiesElimination extends LogicStage {
 
     @Override
     public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
@@ -30,7 +30,7 @@ public class SharedPossibilitiesElimination extends LogicStage {
             return;
         }
 
-        gameState.addToProcessQueue(cell, SHARED_POSSIBILITIES_ELIMINATION);
+        gameState.addToProcessQueue(cell, SAME_POSSIBILITIES_ELIMINATION);
 
         gameState.getRules().stream()
             .filter(rule -> rule.appliesToCell(cell))
@@ -38,7 +38,7 @@ public class SharedPossibilitiesElimination extends LogicStage {
             .flatMap(Collection::stream)
             .distinct()
             .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
-            .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, SHARED_POSSIBILITIES_ELIMINATION));
+            .forEach(visibleCell -> gameState.addToProcessQueue(visibleCell, SAME_POSSIBILITIES_ELIMINATION));
     }
 
     @Override
@@ -64,29 +64,12 @@ public class SharedPossibilitiesElimination extends LogicStage {
                 /*gameState.setCalculationCells(cellsInRule);
                 gameState.update();*/
 
-                // For this rule, find all cells that have all the same possibilities of this cell (even if they have more possibilities)
-                List<Cell> cellsSharingPossibilities = getCellsSharingPossibilities(cell, cellsInRule);
-
-                // If the number of cells we found (including this cell) equals the number of possibilities we have, then those possibilities must exist in these cells
+                List<Cell> cellsSharingPossibilities = getCellsWithSamePossibilities(cell, cellsInRule);
                 if (cellsSharingPossibilities.size() == cell.getPossibleValues().size()) {
                     gameState.setSelectedCells(cellsSharingPossibilities);
                     gameState.setCalculationCells(emptyList());
                     gameState.update();
 
-                    // Remove all other possibilities from these cells
-                    Boolean updatedCellsSharing = cellsSharingPossibilities.stream().map(visibleCell -> {
-                        List<Integer> possibleValuesToRemove = visibleCell.getPossibleValues().stream()
-                            .filter(possibleValue -> !cell.getPossibleValues().contains(possibleValue))
-                            .collect(Collectors.toList());
-                        return visibleCell.removePossibleValues(possibleValuesToRemove);
-                    })
-                        .reduce(false, (a, b) -> a || b);
-
-                    if (updatedCellsSharing) {
-                        gameState.update();
-                    }
-
-                    // Find any other cells that all these cells can see, and remove our possibilities from them
                     List<Cell> cellsVisibleByAll = cellsSharingPossibilities.stream()
                         .map(visibleCell -> getVisibleCellsForAllRules(gameState, visibleCell))
                         .reduce(
@@ -112,9 +95,9 @@ public class SharedPossibilitiesElimination extends LogicStage {
             });
     }
 
-    private List<Cell> getCellsSharingPossibilities(Cell cell, List<Cell> cellsInRule) {
+    private List<Cell> getCellsWithSamePossibilities(Cell cell, List<Cell> cellsInRule) {
         List<Cell> visibleCellsWithSamePossibilities = cellsInRule.stream()
-            .filter(cellInRule -> cell.getPossibleValues().stream().anyMatch(possibleValue -> cellInRule.getPossibleValues().contains(possibleValue)))
+            .filter(cellInRule -> Objects.equals(cell.getPossibleValues(), cellInRule.getPossibleValues()))
             .collect(Collectors.toList());
 
         return Stream.of(visibleCellsWithSamePossibilities, singletonList(cell))

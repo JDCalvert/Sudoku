@@ -29,7 +29,7 @@ public class PuzzleSurface extends JPanel {
     public PuzzleSurface(GameState gameState) {
         this.gameState = gameState;
 
-        setSize(SIZE + 10, SIZE + 10);
+        setPreferredSize(new Dimension(SIZE + 10, SIZE + 10));
         setBackground(WHITE);
     }
 
@@ -87,14 +87,13 @@ public class PuzzleSurface extends JPanel {
 
             g2d.setColor(GRAY);
             g2d.setFont(g2d.getFont().deriveFont(10.0f));
-            List<Integer> possibleValues = cell.getPossibleValues();
-            for (Integer possibleValue : possibleValues) {
+            cell.getPossibleValues().forEach(possibleValue ->
                 g2d.drawString(
                     possibleValue.toString(),
                     cellPositionX + 20 * ((possibleValue - 1) % 3) + 3,
                     cellPositionY + 16 * ((possibleValue - 1) / 3) + 13
-                );
-            }
+                )
+            );
         });
     }
 
