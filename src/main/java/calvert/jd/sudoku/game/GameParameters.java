@@ -1,6 +1,6 @@
 package calvert.jd.sudoku.game;
 
-import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
+import calvert.jd.sudoku.game.logic.LogicStageIdentifier;
 import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
 
 import java.util.List;

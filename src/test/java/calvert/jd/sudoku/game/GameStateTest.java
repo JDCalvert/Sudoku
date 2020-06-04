@@ -1,6 +1,6 @@
 package calvert.jd.sudoku.game;
 
-import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
+import calvert.jd.sudoku.game.logic.LogicStageIdentifier;
 import calvert.jd.sudoku.game.save.SaveGame;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;

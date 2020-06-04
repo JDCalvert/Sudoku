@@ -1,6 +1,6 @@
 package calvert.jd.sudoku.game.save;
 
-import calvert.jd.sudoku.game.logic.LogicStage.LogicStageIdentifier;
+import calvert.jd.sudoku.game.logic.LogicStageIdentifier;
 import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
