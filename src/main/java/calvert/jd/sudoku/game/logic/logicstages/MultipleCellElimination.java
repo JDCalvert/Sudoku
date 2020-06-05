@@ -16,8 +16,6 @@ import java.util.stream.Stream;
 import static calvert.jd.sudoku.game.logic.LogicStageIdentifier.MULTIPLE_CELL_ELIMINATION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 
 /**
  * For an inclusive rule, find all the cells that share a possible value. That possible value can be eliminated from
@@ -28,100 +26,101 @@ public class MultipleCellElimination extends LogicStage {
     @Override
     public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
         Cell cell = cellUpdate.getCell();
-        if (nonNull(cell.getValue())) {
-            return;
-        }
-
         gameState.getRules().stream()
             .filter(rule -> rule.appliesToCell(cell))
-            .map(rule -> rule.getVisibleCells(gameState, cell))
-            .flatMap(Collection::stream)
-            .distinct()
-            .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
-            .forEach(visibleCell ->
-                visibleCell.getPossibleValues().stream()
-                    .filter(possibleValue -> cellUpdate.getRemovedPossibilities().contains(possibleValue))
-                    .forEach(possibleValue -> gameState.addToProcessQueue(MULTIPLE_CELL_ELIMINATION, new LogicConstraint(visibleCell, possibleValue)))
-            );
+            .filter(Rule::isInclusive)
+            .forEach(rule -> {
+                List<Cell> visibleCells = rule.getVisibleCells(gameState, cell);
+
+                cellUpdate.getRemovedPossibilities().forEach(possibleValue ->
+                    visibleCells.stream()
+                        .filter(visibleCell -> visibleCell.getPossibleValues().contains(possibleValue))
+                        .findFirst()
+                        .ifPresent(visibleCell -> gameState.addToProcessQueue(
+                            MULTIPLE_CELL_ELIMINATION,
+                            LogicConstraint.builder()
+                                .cell(visibleCell)
+                                .value(possibleValue)
+                                .rule(rule)
+                                .build()
+                        ))
+                );
+            });
     }
 
     @Override
-    public boolean isValidForCell(Cell cell) {
-        return isNull(cell.getValue());
+    public boolean isValidForCell(LogicConstraint constraint) {
+        return constraint.getCell().getPossibleValues().contains(constraint.getValue());
     }
 
     @Override
     public void runLogic(GameState gameState, LogicConstraint constraint) {
         Cell cell = constraint.getCell();
         Integer possibleValue = constraint.getValue();
+        Rule rule = constraint.getRule();
 
-        if (!cell.getPossibleValues().contains(possibleValue)) {
-            return;
+        List<Cell> cellsInRule = rule.getVisibleCells(gameState, cell);
+
+        gameState.setSelectedCell(cell);
+        gameState.setCalculationCells(cellsInRule);
+        gameState.setCalculationValue(possibleValue);
+        gameState.update();
+
+        List<Cell> cellsSharingPossibleValue = getCellsSharingValue(cellsInRule, possibleValue);
+
+        if (cellsSharingPossibleValue.isEmpty()) {
+            cell.setValue(possibleValue);
+            gameState.update();
+        } else if (cellsSharingPossibleValue.stream().allMatch(visibleCell -> cell.compareTo(visibleCell) < 0)) {
+            cellsSharingPossibleValue = Stream.of(cellsSharingPossibleValue, singletonList(cell))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
+            gameState.setSelectedCells(cellsSharingPossibleValue);
+            gameState.setCalculationCells(emptyList());
+            gameState.update();
+
+            List<Cell> cellsVisibleByAll = cellsSharingPossibleValue.stream()
+                .map(visibleCell -> getVisibleCellsForAllRules(gameState, visibleCell))
+                .map(visibleCells ->
+                    visibleCells.stream()
+                        .filter(visibleCell -> !cellsInRule.contains(visibleCell))
+                        .collect(Collectors.toList())
+                )
+                .reduce(
+                    new ArrayList<>(gameState.getCells()),
+                    (allCells, someCells) -> {
+                        allCells.retainAll(someCells);
+                        return allCells;
+                    }
+                );
+
+            if (!cellsVisibleByAll.isEmpty()) {
+                gameState.setCalculationCells(cellsVisibleByAll);
+                gameState.update();
+
+                Boolean updated = cellsVisibleByAll.stream()
+                    .map(cellToRemovePossibility -> cellToRemovePossibility.removePossibleValue(possibleValue))
+                    .reduce(false, (a, b) -> a || b);
+                if (updated) {
+                    gameState.update();
+                }
+            }
         }
 
-        gameState.getRules().stream()
-            .filter(rule -> rule.appliesToCell(cell))
-            .filter(Rule::isInclusive)
-            .forEach(rule -> {
-                gameState.setSelectedCell(cell);
-                gameState.update();
-
-                List<Cell> cellsInRule = rule.getVisibleCells(gameState, cell);
-
-                gameState.setSelectedCell(cell);
-                gameState.setCalculationCells(cellsInRule);
-                gameState.update();
-
-                List<Cell> cellsSharingPossibleValue = getCellsSharingValue(cell, cellsInRule, possibleValue);
-
-                gameState.setSelectedCells(cellsSharingPossibleValue);
-                gameState.setCalculationCells(emptyList());
-                gameState.update();
-
-                List<Cell> cellsVisibleByAll = cellsSharingPossibleValue.stream()
-                    .map(visibleCell -> getVisibleCellsForAllRules(gameState, visibleCell))
-                    .map(visibleCells ->
-                        visibleCells.stream()
-                            .filter(visibleCell -> !cellsInRule.contains(visibleCell))
-                            .collect(Collectors.toList())
-                    )
-                    .reduce(
-                        new ArrayList<>(gameState.getCells()),
-                        (allCells, someCells) -> {
-                            allCells.retainAll(someCells);
-                            return allCells;
-                        }
-                    );
-
-                if (!cellsVisibleByAll.isEmpty()) {
-                    gameState.setCalculationCells(cellsVisibleByAll);
-                    gameState.update();
-
-                    Boolean updated = cellsVisibleByAll.stream()
-                        .map(cellToRemovePossibility -> cellToRemovePossibility.removePossibleValue(possibleValue))
-                        .reduce(false, (a, b) -> a || b);
-                    if (updated) {
-                        gameState.update();
-                    }
-                }
-            });
+        gameState.setCalculationValues(emptyList());
     }
 
     /**
      * Find the cells that share the possible value.
      *
-     * @param cell          The cell being processed
      * @param cellsInRule   The cell that is visible to the process cell by a particular rule
      * @param possibleValue The possible value to join on
      * @return A list of cells that all have the required possible value, including the cell being processed
      */
-    private List<Cell> getCellsSharingValue(Cell cell, List<Cell> cellsInRule, Integer possibleValue) {
-        List<Cell> visibleCellsSharingPossibleValue = cellsInRule.stream()
+    private List<Cell> getCellsSharingValue(List<Cell> cellsInRule, Integer possibleValue) {
+        return cellsInRule.stream()
             .filter(visibleCell -> visibleCell.getPossibleValues().contains(possibleValue))
-            .collect(Collectors.toList());
-
-        return Stream.of(visibleCellsSharingPossibleValue, singletonList(cell))
-            .flatMap(Collection::stream)
             .collect(Collectors.toList());
     }
 

@@ -5,8 +5,11 @@ import calvert.jd.sudoku.game.GameState;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.awt.Color.*;
 import static java.util.Objects.nonNull;
@@ -64,6 +67,8 @@ public class PuzzleSurface extends JPanel {
             }
         }
 
+        List<Cell> selectedAndCalculationCells = Stream.of(this.gameState.getSelectedCells(), this.gameState.getCalculationCells()).flatMap(Collection::stream).collect(Collectors.toList());
+
         //Numbers
         this.gameState.getCells().forEach(cell -> {
             int cellPositionX = 5 + cell.getI() * CELL_SIZE;
@@ -85,15 +90,24 @@ public class PuzzleSurface extends JPanel {
                 );
             }
 
+            boolean isSelected = selectedAndCalculationCells.contains(cell);
+
             g2d.setColor(GRAY);
             g2d.setFont(g2d.getFont().deriveFont(10.0f));
-            cell.getPossibleValues().forEach(possibleValue ->
+            cell.getPossibleValues().forEach(possibleValue -> {
+                Font originalFont = g2d.getFont();
+                if (isSelected && this.gameState.getCalculationValues().contains(possibleValue)) {
+                    g2d.setFont(originalFont.deriveFont(Font.BOLD));
+                }
+
                 g2d.drawString(
                     possibleValue.toString(),
                     cellPositionX + 20 * ((possibleValue - 1) % 3) + 3,
                     cellPositionY + 16 * ((possibleValue - 1) / 3) + 13
-                )
-            );
+                );
+
+                g2d.setFont(originalFont);
+            });
         });
     }
 

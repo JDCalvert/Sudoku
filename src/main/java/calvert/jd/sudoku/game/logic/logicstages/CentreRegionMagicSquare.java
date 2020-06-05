@@ -5,6 +5,7 @@ import calvert.jd.sudoku.game.GameState;
 import calvert.jd.sudoku.game.logic.LogicConstraint;
 import calvert.jd.sudoku.game.logic.LogicStage;
 import calvert.jd.sudoku.game.rules.Rule;
+import calvert.jd.sudoku.game.rules.Rule.RuleIdentifier;
 import calvert.jd.sudoku.game.util.CellUpdate;
 
 import java.util.*;
@@ -46,35 +47,33 @@ public class CentreRegionMagicSquare extends LogicStage {
     @Override
     public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
         Cell cell = cellUpdate.getCell();
-        if (isValidForCell(cell)) {
+        if (cellInMagicSquare(cell)) {
             Stream.of(SUDOKU_ROW_RULE, SUDOKU_COLUMN_RULE, LEADING_DIAGONAL_DOWN_RULE, LEADING_DIAGONAL_UP_RULE)
-                .map(Rule.RuleIdentifier::getRule)
+                .map(RuleIdentifier::getRule)
                 .map(rule -> rule.getVisibleCells(gameState, cell))
                 .flatMap(Collection::stream)
                 .distinct()
-                .filter(this::isValidForCell)
-                .forEach(magicSquareCell -> gameState.addToProcessQueue(CENTRE_REGION_MAGIC_SQUARE, new LogicConstraint(magicSquareCell)));
+                .filter(this::cellInMagicSquare)
+                .forEach(magicSquareCell -> gameState.addToProcessQueue(CENTRE_REGION_MAGIC_SQUARE, LogicConstraint.builder().cell(magicSquareCell).build()));
         }
     }
 
     @Override
-    public boolean isValidForCell(Cell cell) {
+    public boolean isValidForCell(LogicConstraint constraint) {
+        Cell cell = constraint.getCell();
         return cellInMagicSquare(cell) && isNull(cell.getValue());
     }
 
     @Override
     public void runLogic(GameState gameState, LogicConstraint logicConstraint) {
         Cell cell = logicConstraint.getCell();
-        if (!isValidForCell(cell)) {
-            return;
-        }
 
         gameState.setSelectedCell(cell);
         gameState.update();
 
         // Find the rules that apply to this cell
         List<Rule> rules = Stream.of(SUDOKU_ROW_RULE, SUDOKU_COLUMN_RULE, LEADING_DIAGONAL_DOWN_RULE, LEADING_DIAGONAL_UP_RULE)
-            .map(Rule.RuleIdentifier::getRule)
+            .map(RuleIdentifier::getRule)
             .filter(rule -> rule.appliesToCell(cell))
             .collect(Collectors.toList());
 

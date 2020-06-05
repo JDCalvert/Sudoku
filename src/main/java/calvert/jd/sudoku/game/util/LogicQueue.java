@@ -18,7 +18,6 @@ public class LogicQueue extends LinkedList<LogicQueue.LogicQueueEntry> {
 
     @Override
     public boolean add(LogicQueueEntry logicQueueEntry) {
-
         // Traverse through the elements in the list. If the new element is already in the list, then don't add it. If
         // we reach an element with a later logic stage, then add the new entry before it.
         ListIterator<LogicQueueEntry> it = listIterator();
@@ -32,6 +31,7 @@ public class LogicQueue extends LinkedList<LogicQueue.LogicQueueEntry> {
                 return true;
             }
         }
+
         it.add(logicQueueEntry);
         return true;
     }

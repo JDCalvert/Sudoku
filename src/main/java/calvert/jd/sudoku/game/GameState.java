@@ -43,8 +43,9 @@ public class GameState {
     private List<Rule> rules = new ArrayList<>();
     private List<LogicStage> logicStages = new ArrayList<>();
 
-    private List<Cell> selectedCells;
+    private List<Cell> selectedCells = emptyList();
     private List<Cell> calculationCells = emptyList();
+    private List<Integer> calculationValues = emptyList();
 
     private final List<GameStateListener> gameStateListeners = new ArrayList<>();
     private final List<GameLoggingListener> gameLoggingListeners = new ArrayList<>();
@@ -57,7 +58,6 @@ public class GameState {
         }
 
         this.cells.sort(Cell::compareTo);
-        this.selectedCells = emptyList();
     }
 
     public int getNumQueueProcesses() {
@@ -130,10 +130,9 @@ public class GameState {
 
             LogicStage logicStage = logicQueueEntry.getLogicStageIdentifier().getLogicStage();
             LogicConstraint logicConstraint = logicQueueEntry.getLogicConstraint();
-            Cell cell = logicConstraint.getCell();
 
-            if (logicStage.isValidForCell(cell)) {
-                this.log("About to process cell=" + cell + " for logic " + logicQueueEntry.getLogicStageIdentifier());
+            if (logicStage.isValidForCell(logicConstraint)) {
+                this.log("About to process cell=" + logicConstraint.getCell() + " for logic " + logicQueueEntry.getLogicStageIdentifier());
 
                 logicStage.runLogic(this, logicConstraint);
                 setSelectedCells(emptyList());
@@ -275,6 +274,18 @@ public class GameState {
 
     public void setCalculationCells(List<Cell> calculationCells) {
         this.calculationCells = calculationCells;
+    }
+
+    public List<Integer> getCalculationValues() {
+        return this.calculationValues;
+    }
+
+    public void setCalculationValue(Integer calculationValue) {
+        setCalculationValues(singletonList(calculationValue));
+    }
+
+    public void setCalculationValues(List<Integer> calculationValues) {
+        this.calculationValues = calculationValues;
     }
 
     public List<Cell> getErrorCells() {

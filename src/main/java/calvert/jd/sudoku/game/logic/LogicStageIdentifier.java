@@ -8,10 +8,9 @@ import calvert.jd.sudoku.game.logic.logicstages.*;
 public enum LogicStageIdentifier {
     SINGLE_CELL_ELIMINATION(new SingleCellElimination(), false),
     CENTRE_REGION_MAGIC_SQUARE(new CentreRegionMagicSquare(), true),
+    MULTIPLE_CELL_ELIMINATION(new MultipleCellElimination(), false),
     SHARED_POSSIBILITIES_ELIMINATION(new SharedPossibilitiesElimination(), false),
-    SAME_POSSIBILITIES_ELIMINATION(new SamePossibilitiesElimination(), false),
-    ONLY_CELL_WITH_POSSIBILITY(new OnlyCellWithPossibility(), false),
-    MULTIPLE_CELL_ELIMINATION(new MultipleCellElimination(), false);
+    SAME_POSSIBILITIES_ELIMINATION(new SamePossibilitiesElimination(), false);
 
     private final LogicStage logicStage;
     private final boolean isConstraint;
