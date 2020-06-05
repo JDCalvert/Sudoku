@@ -37,9 +37,13 @@ public class Cell implements Comparable<Cell> {
     public void setValue(Integer value) {
         logUpdate("set value=" + value);
 
+        List<Integer> possibleValuesRemoved = this.possibleValues.stream()
+            .filter(possibleValue -> !possibleValue.equals(value))
+            .collect(Collectors.toList());
+
         this.value = value;
         this.possibleValues = emptyList();
-        this.gameState.handleCellUpdate(new CellUpdate(this, emptyList()));
+        this.gameState.handleCellUpdate(new CellUpdate(this, possibleValuesRemoved));
     }
 
     public Integer getInitialValue() {

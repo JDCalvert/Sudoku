@@ -20,27 +20,21 @@ public class SingleCellElimination extends LogicStage {
     @Override
     public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
         Cell cell = cellUpdate.getCell();
-        if (isValidForCell(cell)) {
-            gameState.addToProcessQueue(SINGLE_CELL_ELIMINATION, new LogicConstraint(cell));
+        if (nonNull(cell)) {
+            gameState.addToProcessQueue(SINGLE_CELL_ELIMINATION, LogicConstraint.builder().cell(cell).build());
         }
     }
 
     @Override
-    public boolean isValidForCell(Cell cell) {
-        return nonNull(cell.getValue());
+    public boolean isValidForCell(LogicConstraint constraint) {
+        return nonNull(constraint.getCell().getValue());
     }
 
     @Override
     public void runLogic(GameState gameState, LogicConstraint constraint) {
         Cell cell = constraint.getCell();
 
-        // If somehow this cell doesn't have a value, then we can skip this logic.
-        if (!isValidForCell(cell)) {
-            return;
-        }
-
         gameState.setSelectedCell(cell);
-        gameState.update();
 
         gameState.getRules().stream()
             .filter(rule -> rule.appliesToCell(cell))

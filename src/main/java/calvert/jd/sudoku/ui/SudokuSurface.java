@@ -61,7 +61,6 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
     private JCheckBox sharedPossibilitiesEliminationCheckbox;
     private JCheckBox samePossibilitiesEliminationCheckbox;
     private JCheckBox multipleCellEliminationCheckbox;
-    private JCheckBox onlyCellWithPossibilityCheckbox;
 
     private JPanel inputPanel;
     private JButton upButton;
@@ -164,13 +163,11 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         this.sharedPossibilitiesEliminationCheckbox = new JCheckBox("Shared Possibilities");
         this.samePossibilitiesEliminationCheckbox = new JCheckBox("Same Possibilities");
         this.multipleCellEliminationCheckbox = new JCheckBox("Multiple Cell Elimination");
-        this.onlyCellWithPossibilityCheckbox = new JCheckBox("Only Cell with Possibility");
 
         this.singleCellEliminationCheckbox.setSelected(true);
         this.sharedPossibilitiesEliminationCheckbox.setSelected(true);
         this.samePossibilitiesEliminationCheckbox.setSelected(true);
         this.multipleCellEliminationCheckbox.setSelected(true);
-        this.onlyCellWithPossibilityCheckbox.setSelected(true);
 
         logicStagesGroupLayout.setHorizontalGroup(
             logicStagesGroupLayout.createParallelGroup()
@@ -178,7 +175,6 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
                 .addComponent(this.sharedPossibilitiesEliminationCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(this.samePossibilitiesEliminationCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(this.multipleCellEliminationCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(this.onlyCellWithPossibilityCheckbox, DEFAULT_SIZE, DEFAULT_SIZE, Short.MAX_VALUE)
         );
         logicStagesGroupLayout.setVerticalGroup(
             logicStagesGroupLayout.createSequentialGroup()
@@ -186,7 +182,6 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
                 .addComponent(this.sharedPossibilitiesEliminationCheckbox)
                 .addComponent(this.samePossibilitiesEliminationCheckbox)
                 .addComponent(this.multipleCellEliminationCheckbox)
-                .addComponent(this.onlyCellWithPossibilityCheckbox)
         );
 
         this.inputPanel = new JPanel();
@@ -458,9 +453,6 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
         }
         if (this.multipleCellEliminationCheckbox.isSelected()) {
             logicStages.add(MULTIPLE_CELL_ELIMINATION);
-        }
-        if (this.onlyCellWithPossibilityCheckbox.isSelected()) {
-            logicStages.add(ONLY_CELL_WITH_POSSIBILITY);
         }
         return logicStages;
     }

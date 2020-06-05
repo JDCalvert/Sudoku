@@ -1,6 +1,5 @@
 package calvert.jd.sudoku.game.logic;
 
-import calvert.jd.sudoku.game.Cell;
 import calvert.jd.sudoku.game.GameState;
 import calvert.jd.sudoku.game.util.CellUpdate;
 
@@ -21,13 +20,12 @@ public abstract class LogicStage {
     /**
      * Some logic should only be run on certain cells. The cell might have become invalid for the logic stage by the time it's reached in the queue.
      */
-    public abstract boolean isValidForCell(Cell cell);
+    public abstract boolean isValidForCell(LogicConstraint constraint);
 
     /**
      * Run the piece of logic on the given logicConstraint.
      *
-     * @param logicConstraint information about how to run the logic
+     * @param constraint information about how to run the logic
      */
-    public abstract void runLogic(GameState gameState, LogicConstraint logicConstraint);
-
+    public abstract void runLogic(GameState gameState, LogicConstraint constraint);
 }

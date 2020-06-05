@@ -28,75 +28,77 @@ public class SamePossibilitiesElimination extends LogicStage {
     @Override
     public void processCellUpdate(GameState gameState, CellUpdate cellUpdate) {
         Cell cell = cellUpdate.getCell();
-        if (!isValidForCell(cell)) {
-            return;
-        }
-
-        gameState.addToProcessQueue(SAME_POSSIBILITIES_ELIMINATION, new LogicConstraint(cell));
 
         gameState.getRules().stream()
             .filter(rule -> rule.appliesToCell(cell))
-            .map(rule -> rule.getVisibleCells(gameState, cell))
-            .flatMap(Collection::stream)
-            .distinct()
-            .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
-            .forEach(visibleCell -> gameState.addToProcessQueue(SAME_POSSIBILITIES_ELIMINATION, new LogicConstraint(visibleCell)));
+            .filter(Rule::isInclusive)
+            .forEach(rule -> {
+                gameState.addToProcessQueue(
+                    SAME_POSSIBILITIES_ELIMINATION,
+                    LogicConstraint.builder()
+                        .cell(cell)
+                        .rule(rule)
+                        .build()
+                );
+
+                rule.getVisibleCells(gameState, cell).stream()
+                    .filter(visibleCell -> visibleCell.hasAnyPossibility(cellUpdate.getRemovedPossibilities()))
+                    .forEach(visibleCell ->
+                        gameState.addToProcessQueue(
+                            SAME_POSSIBILITIES_ELIMINATION,
+                            LogicConstraint.builder()
+                                .cell(visibleCell)
+                                .rule(rule)
+                                .build()
+                        )
+                    );
+            });
     }
 
     @Override
-    public boolean isValidForCell(Cell cell) {
-        return isNull(cell.getValue());
+    public boolean isValidForCell(LogicConstraint constraint) {
+        return isNull(constraint.getCell().getValue());
     }
 
     @Override
     public void runLogic(GameState gameState, LogicConstraint constraint) {
         Cell cell = constraint.getCell();
+        Rule rule = constraint.getRule();
 
-        if (!isValidForCell(cell)) {
-            return;
-        }
+        List<Cell> cellsInRule = rule.getVisibleCells(gameState, cell);
 
-        gameState.getRules().stream()
-            .filter(rule -> rule.appliesToCell(cell))
-            .filter(Rule::isInclusive)
-            .forEach(inclusiveRule -> {
-                gameState.setSelectedCell(cell);
-                gameState.setCalculationCells(emptyList());
-                gameState.update();
+        gameState.setSelectedCell(cell);
+        gameState.setCalculationCells(cellsInRule);
+        gameState.update();
 
-                List<Cell> cellsInRule = inclusiveRule.getVisibleCells(gameState, cell);
-                gameState.setCalculationCells(cellsInRule);
-                gameState.update();
+        List<Cell> cellsSharingPossibilities = getCellsWithSamePossibilities(cell, cellsInRule);
+        if (cellsSharingPossibilities.size() == cell.getPossibleValues().size() && cellsSharingPossibilities.stream().allMatch(visibleCell -> cell.compareTo(visibleCell) <= 0)) {
+            gameState.setSelectedCells(cellsSharingPossibilities);
+            gameState.setCalculationCells(emptyList());
+            gameState.update();
 
-                List<Cell> cellsSharingPossibilities = getCellsWithSamePossibilities(cell, cellsInRule);
-                if (cellsSharingPossibilities.size() == cell.getPossibleValues().size()) {
-                    gameState.setSelectedCells(cellsSharingPossibilities);
-                    gameState.setCalculationCells(emptyList());
-                    gameState.update();
-
-                    List<Cell> cellsVisibleByAll = cellsSharingPossibilities.stream()
-                        .map(visibleCell -> getVisibleCellsForAllRules(gameState, visibleCell))
-                        .reduce(
-                            new ArrayList<>(gameState.getCells()),
-                            (allCells, someCells) -> {
-                                allCells.retainAll(someCells);
-                                return allCells;
-                            }
-                        );
-
-                    if (!cellsVisibleByAll.isEmpty()) {
-                        gameState.setCalculationCells(cellsVisibleByAll);
-                        gameState.update();
-
-                        boolean updated = cellsVisibleByAll.stream()
-                            .map(visibleCell -> visibleCell.removePossibleValues(cell.getPossibleValues()))
-                            .reduce(false, (a, b) -> a || b);
-                        if (updated) {
-                            gameState.update();
-                        }
+            List<Cell> cellsVisibleByAll = cellsSharingPossibilities.stream()
+                .map(visibleCell -> getVisibleCellsForAllRules(gameState, visibleCell))
+                .reduce(
+                    new ArrayList<>(gameState.getCells()),
+                    (allCells, someCells) -> {
+                        allCells.retainAll(someCells);
+                        return allCells;
                     }
+                );
+
+            if (!cellsVisibleByAll.isEmpty()) {
+                gameState.setCalculationCells(cellsVisibleByAll);
+                gameState.update();
+
+                boolean updated = cellsVisibleByAll.stream()
+                    .map(visibleCell -> visibleCell.removePossibleValues(cell.getPossibleValues()))
+                    .reduce(false, (a, b) -> a || b);
+                if (updated) {
+                    gameState.update();
                 }
-            });
+            }
+        }
     }
 
     private List<Cell> getCellsWithSamePossibilities(Cell cell, List<Cell> cellsInRule) {
