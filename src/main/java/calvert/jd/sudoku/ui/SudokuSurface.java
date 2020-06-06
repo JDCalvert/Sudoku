@@ -10,7 +10,10 @@ import calvert.jd.sudoku.game.save.SaveGame;
 import calvert.jd.sudoku.ui.components.LinkedCheckBox;
 import calvert.jd.sudoku.ui.components.LoggingPane;
 import calvert.jd.sudoku.ui.components.NumberSpinner;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -82,11 +85,15 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
     private JSpinner updateDelaySpinner;
 
     private JFileChooser fileChooser;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+    private final ObjectWriter objectWriter;
 
     public SudokuSurface() {
         this.gameState = new GameState();
         this.gameState.addGameStateListener(this);
+
+        this.objectMapper = new ObjectMapper();
+        this.objectWriter = this.objectMapper.writer(new DefaultPrettyPrinter().withArrayIndenter(new DefaultIndenter()));
 
         init();
     }
@@ -513,7 +520,7 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
                         .collect(Collectors.toList())
                 );
 
-                this.objectMapper.writeValue(selectedFile, saveGame);
+                this.objectWriter.writeValue(selectedFile, saveGame);
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -545,6 +552,8 @@ public class SudokuSurface extends JPanel implements ActionListener, KeyListener
 
                 List<LogicStageIdentifier> constraints = saveGame.getConstraints();
                 this.magicCentreSquareCheckbox.setSelected(constraints.contains(CENTRE_REGION_MAGIC_SQUARE));
+
+                this.gameState.reset();
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
