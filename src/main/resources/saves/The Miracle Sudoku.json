@@ -1,1 +1,23 @@
-{"cells":[{"i":2,"j":4,"value":1},{"i":6,"j":5,"value":2}],"rules":["SUDOKU_ROW_RULE","SUDOKU_COLUMN_RULE","SUDOKU_REGION_RULE","KNIGHTS_MOVE_RULE","KINGS_MOVE_RULE","ADJACENT_SEQUENTIAL_RULE"],"constraints":[]}
+{
+  "cells" : [
+    {
+      "i" : 2,
+      "j" : 4,
+      "value" : 1
+    },
+    {
+      "i" : 6,
+      "j" : 5,
+      "value" : 2
+    }
+  ],
+  "rules" : [
+    "SUDOKU_ROW_RULE",
+    "SUDOKU_COLUMN_RULE",
+    "SUDOKU_REGION_RULE",
+    "KNIGHTS_MOVE_RULE",
+    "KINGS_MOVE_RULE",
+    "ADJACENT_SEQUENTIAL_RULE"
+  ],
+  "constraints" : [ ]
+}
