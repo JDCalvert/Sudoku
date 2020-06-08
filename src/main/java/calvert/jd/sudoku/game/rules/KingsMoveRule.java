@@ -6,6 +6,7 @@ import calvert.jd.sudoku.game.GameState;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static calvert.jd.sudoku.game.rules.Rule.RuleIdentifier.KINGS_MOVE_RULE;
 import static java.lang.Math.abs;
 
 public class KingsMoveRule extends Rule {
@@ -30,5 +31,10 @@ public class KingsMoveRule extends Rule {
     @Override
     public boolean appliesToCell(Cell cell) {
         return true;
+    }
+
+    @Override
+    public RuleIdentifier getRuleIdentifier() {
+        return KINGS_MOVE_RULE;
     }
 }

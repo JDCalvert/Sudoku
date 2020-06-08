@@ -36,14 +36,15 @@ public class MultipleCellElimination extends LogicStage {
                     visibleCells.stream()
                         .filter(visibleCell -> visibleCell.getPossibleValues().contains(possibleValue))
                         .findFirst()
-                        .ifPresent(visibleCell -> gameState.addToProcessQueue(
-                            MULTIPLE_CELL_ELIMINATION,
-                            LogicConstraint.builder()
-                                .cell(visibleCell)
-                                .value(possibleValue)
-                                .rule(rule)
-                                .build()
-                        ))
+                        .ifPresent(visibleCell ->
+                            gameState.addToProcessQueue(
+                                MULTIPLE_CELL_ELIMINATION,
+                                LogicConstraint.builder()
+                                    .cell(visibleCell)
+                                    .value(possibleValue)
+                                    .rule(rule)
+                                    .build()
+                            ))
                 );
             });
     }

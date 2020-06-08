@@ -11,6 +11,7 @@ import calvert.jd.sudoku.game.util.CellUpdate;
 import calvert.jd.sudoku.game.util.LogicQueue;
 import calvert.jd.sudoku.game.util.LogicQueue.LogicQueueEntry;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -132,7 +133,13 @@ public class GameState {
             LogicConstraint logicConstraint = logicQueueEntry.getLogicConstraint();
 
             if (logicStage.isValidForCell(logicConstraint)) {
-                this.log("About to process cell=" + logicConstraint.getCell() + " for logic " + logicQueueEntry.getLogicStageIdentifier());
+                List<String> logFields = new ArrayList<>();
+                appendLogValue(logFields, "logic", logicQueueEntry.getLogicStageIdentifier());
+                appendLogValue(logFields, "cell", logicConstraint.getCell());
+                appendLogValue(logFields, "value", logicConstraint.getValue());
+                appendLogValue(logFields, "rule", logicConstraint.getRule());
+
+                this.log("About to process " + String.join(", ", logFields));
 
                 logicStage.runLogic(this, logicConstraint);
                 setSelectedCells(emptyList());
@@ -146,6 +153,12 @@ public class GameState {
         }
 
         done();
+    }
+
+    private void appendLogValue(List<String> logFields, String fieldName, Object value) {
+        if (nonNull(value)) {
+            logFields.add(fieldName + "=" + value);
+        }
     }
 
     private boolean checkStatus() {
@@ -211,8 +224,9 @@ public class GameState {
         this.gameLoggingListeners.forEach(GameLoggingListener::clear);
     }
 
-    public void log(String text) {
-        this.gameLoggingListeners.forEach(listener -> listener.log(text));
+    public void log(String text, Object... parameters) {
+        String log = MessageFormat.format(text, parameters);
+        this.gameLoggingListeners.forEach(listener -> listener.log(log));
     }
 
     public void reset() {

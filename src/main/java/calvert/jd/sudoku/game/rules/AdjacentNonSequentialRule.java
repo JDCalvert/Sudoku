@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static calvert.jd.sudoku.game.rules.Rule.RuleIdentifier.ADJACENT_SEQUENTIAL_RULE;
 import static java.lang.Math.abs;
 
 public class AdjacentNonSequentialRule extends Rule {
@@ -30,6 +31,11 @@ public class AdjacentNonSequentialRule extends Rule {
     @Override
     public boolean appliesToCell(Cell cell) {
         return true;
+    }
+
+    @Override
+    public RuleIdentifier getRuleIdentifier() {
+        return ADJACENT_SEQUENTIAL_RULE;
     }
 
     @Override

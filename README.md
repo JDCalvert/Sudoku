@@ -1,2 +1,2 @@
 # Sudoku
-An Experiment to Solve Sudoku's
+A program to solve Sudokus.

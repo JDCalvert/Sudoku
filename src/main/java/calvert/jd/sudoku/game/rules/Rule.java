@@ -33,6 +33,8 @@ public abstract class Rule {
      */
     public abstract boolean appliesToCell(Cell cell);
 
+    public abstract RuleIdentifier getRuleIdentifier();
+
     /**
      * Calculate the possibilities to be eliminated by this rule.
      * By default, this is the same as the values passed in (i.e. a cell should not be able to see any cell with the same value). This can be overridden for rules that differ,
@@ -46,6 +48,11 @@ public abstract class Rule {
 
     public final List<Integer> getPossibilitiesToEliminate(Integer valueToCheck) {
         return getPossibilitiesToEliminate(singletonList(valueToCheck));
+    }
+
+    @Override
+    public String toString() {
+        return getRuleIdentifier().toString();
     }
 
     public enum RuleIdentifier {
